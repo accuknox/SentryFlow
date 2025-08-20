@@ -13,7 +13,7 @@ on:
 
 jobs:
   release_helm_charts:
-    if: github.repository == '5GSEC/sentryflow'
+    if: github.repository == 'accuknox/sentryflow'
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -39,9 +39,9 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
           charts_dir: deployments/
           # repo where charts would be published
-          owner: 5GSEC
+          owner: accuknox
           repository: charts
           branch: gh-pages
-          charts_url: https://5gsec.github.io/charts/
+          charts_url: https://accuknox.github.io/charts/
           commit_username: "github-actions[bot]"
           commit_email: "github-actions[bot]@users.noreply.github.com"

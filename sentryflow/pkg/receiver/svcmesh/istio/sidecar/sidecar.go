@@ -22,8 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/5GSEC/SentryFlow/sentryflow/pkg/config"
-	"github.com/5GSEC/SentryFlow/sentryflow/pkg/util"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/config"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
 )
 
 const (

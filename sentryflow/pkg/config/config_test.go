@@ -10,7 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/5GSEC/SentryFlow/sentryflow/pkg/util"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
 )
 
 func TestConfig_validate(t *testing.T) {
@@ -76,7 +76,7 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "5gsec/http-filter:v0.1",
+						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -100,7 +100,7 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "5gsec/http-filter:v0.1",
+						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -126,7 +126,7 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "5gsec/http-filter:v0.1",
+						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -152,7 +152,7 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "5gsec/http-filter:v0.1",
+						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -199,7 +199,7 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "5gsec/http-filter:v0.1",
+						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -226,7 +226,7 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "5gsec/http-filter:v0.1",
+						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -253,7 +253,7 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "5gsec/http-filter:v0.1",
+						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,

@@ -13,9 +13,9 @@ import (
 	"google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
-	protobuf "github.com/5GSEC/SentryFlow/protobuf/golang"
-	"github.com/5GSEC/SentryFlow/sentryflow/pkg/config"
-	"github.com/5GSEC/SentryFlow/sentryflow/pkg/util"
+	protobuf "github.com/accuknox/SentryFlow/protobuf/golang"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/config"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
 )
 
 // clientList represents a list of gRPC clients and their associated channels for
