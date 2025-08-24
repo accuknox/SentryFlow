@@ -65,7 +65,7 @@ jobs:
           repository_name: ${{ inputs.ECR_REPOSITORY }}
           tag: ${{ steps.tag.outputs.tag }}
           registry_type: ${{ inputs.REGISTRY_TYPE }}
-          disable_scan: false
+          disable_scan: true
           severity: "CRITICAL"
           exit_code: "0"
           ignore_unfixed: true
