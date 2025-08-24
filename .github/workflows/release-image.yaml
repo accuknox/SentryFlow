@@ -16,14 +16,21 @@ on:
         description: 'app name'
         required: true
         type: string
+      ECR_REPOSITORY:
+        description: 'ECR repository URL'
+        required: false
+        type: string
+        default: 'public.ecr.aws/k9v9d5v2'
+      REGISTRY_TYPE:
+        description: 'ECR registry type (public or private)'
+        required: false
+        type: string
+        default: 'public'
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }} 
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
   AWS_REGION: us-east-1
-
 
 jobs:
   release-image:
@@ -33,22 +40,12 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Set up AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
           aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
-          aws-region: us-east-1
-
-      - name: Login to AWS ECR
-        run: |
-          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/k9v9d5v2
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Get tag
         id: tag
@@ -59,17 +56,13 @@ jobs:
             echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build image
-        run: DOCKER_TAG=${{ steps.tag.outputs.tag }} make image
-        working-directory: ${{ inputs.WORKING_DIRECTORY }}
-
-      - name: Scan image
-        uses: anchore/scan-action@v4
+      - name: Docker build, scan and push to ECR
+        uses: accuknox/common-gh-actions/actions/docker-build-scan-push@main
         with:
-          image: 'public.ecr.aws/k9v9d5v2/${{ inputs.NAME }}:${{ steps.tag.outputs.tag }}'
-          severity-cutoff: critical
-          output-format: sarif
-
-      - name: Build and push image
-        working-directory: ${{ inputs.WORKING_DIRECTORY }}
-        run: DOCKER_TAG=${{ steps.tag.outputs.tag }} make imagex
+          docker_context: ${{ inputs.WORKING_DIRECTORY }}
+          dockerfile_path: ${{ inputs.WORKING_DIRECTORY }}/Dockerfile
+          image_name: ${{ inputs.NAME }}
+          repository_name: ${{ inputs.ECR_REPOSITORY }}
+          tag: ${{ steps.tag.outputs.tag }}
+          registry_type: ${{ inputs.REGISTRY_TYPE }}
+          disable_scan: false
