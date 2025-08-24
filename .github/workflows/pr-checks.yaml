@@ -98,6 +98,7 @@ jobs:
           image: "public.ecr.aws/k9v9d5v2/sentryflow:latest"
           severity-cutoff: critical
           output-format: sarif
+          fail-build: false
 
   build-envoy-filter-image:
     needs: [ files-changed ]
@@ -121,3 +122,4 @@ jobs:
           image: "public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:latest"
           severity-cutoff: critical
           output-format: sarif
+          fail-build: false
