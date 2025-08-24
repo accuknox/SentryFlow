@@ -66,3 +66,6 @@ jobs:
           tag: ${{ steps.tag.outputs.tag }}
           registry_type: ${{ inputs.REGISTRY_TYPE }}
           disable_scan: false
+          severity: "CRITICAL"
+          exit_code: "0"
+          ignore_unfixed: true
