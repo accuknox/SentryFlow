@@ -10,38 +10,52 @@ on:
         description: "Release tag which has to be updated"
         type: "string"
         required: true
+      ecr_repository:
+        description: "ECR repository URL for Helm charts"
+        type: "string"
+        required: false
+        default: "956994857092.dkr.ecr.us-east-2.amazonaws.com"
+      chart_path:
+        description: "Path to Helm chart directory"
+        type: "string"
+        required: false
+        default: "deployments"
+      registry_type:
+        description: "ECR registry type (public or private)"
+        type: "string"
+        required: false
+        default: "private"
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+  AWS_REGION: us-east-2
 
 jobs:
   release_helm_charts:
     if: github.repository == 'accuknox/sentryflow'
     permissions:
-      contents: write
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-
-      - name: Generate a token
-        id: generate-token
-        uses: actions/create-github-app-token@v1
+      - name: Set up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          app-id: ${{ vars.ACTIONS_APP_ID }}
-          private-key: ${{ secrets.ACTIONS_APP_PRIVATE_KEY }}
-          repositories: charts
+          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Publish Helm chart
-        uses: stefanprodan/helm-gh-pages@master
+      - name: Push Helm chart to ECR
+        uses: accuknox/common-gh-actions/actions/helm-push-new@main
         with:
-          # Access token which can push to a different repo in the same org
-          token: ${{ steps.generate-token.outputs.token }}
-          charts_dir: deployments/
-          # repo where charts would be published
-          owner: accuknox
-          repository: charts
-          branch: gh-pages
-          charts_url: https://accuknox.github.io/charts/
-          commit_username: "github-actions[bot]"
-          commit_email: "github-actions[bot]@users.noreply.github.com"
+          chart-path: ${{ inputs.chart_path }}
+          ecr-region: ${{ env.AWS_REGION }}
+          ecr-repo: ${{ inputs.ecr_repository }}
+          version: ${{ inputs.tag }}
+          type: ${{ inputs.registry_type }}
+          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
+          version-dir: "src"
