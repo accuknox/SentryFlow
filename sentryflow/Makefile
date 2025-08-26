@@ -2,7 +2,7 @@
 # Copyright 2024 Authors of SentryFlow
 
 BINARY_NAME ?= sentryflow
-REGISTRY ?= docker.io/5gsec
+REGISTRY ?= public.ecr.aws/k9v9d5v2
 VERSION ?= $(shell git rev-parse HEAD)
 BUILD_TS ?= $(shell date)
 DOCKER_IMAGE ?= $(REGISTRY)/$(BINARY_NAME)
