@@ -7,14 +7,14 @@ Before you dive in, please take a moment to read through this guide.
 
 # Reporting issue
 
-We use [GitHub](https://github.com/5GSEC/SentryFlow) to manage the issues. Please open
-a [new issue](https://github.com/5GSEC/SentryFlow/issues/new/choose) directly there.
+We use [GitHub](https://github.com/accuknox/SentryFlow) to manage the issues. Please open
+a [new issue](https://github.com/accuknox/SentryFlow/issues/new/choose) directly there.
 
 # Getting Started
 
 ## Setting Up Your Environment
 
-- Head over to [GitHub](https://github.com/5GSEC/SentryFlow) and fork the 5GSec SentryFlow repository.
+- Head over to [GitHub](https://github.com/accuknox/SentryFlow) and fork the Accuknox SentryFlow repository.
 - Clone your forked repository onto your local machine.
   ```shell
   git clone git@github.com:<your-username>/SentryFlow.git
@@ -53,7 +53,7 @@ It is advised to try out the project as an end user.
 These are general guidelines on how to organize source code in this repository.
 
 ```
-github.com/5GSEC/SentryFlow
+github.com/accuknox/SentryFlow
 
 ├── client                                    -> Log client code.
 ├── deployments                               -> Manifests or Helm charts for deployment on Kubernetes.
@@ -106,15 +106,15 @@ import (
   "k8s.io/apimachinery/pkg/runtime"
   "sigs.k8s.io/controller-runtime/pkg/client"
   
-  "github.com/5GSEC/SentryFlow/pkg/config"
-  "github.com/5GSEC/SentryFlow/pkg/receiver"
-  "github.com/5GSEC/SentryFlow/pkg/util"
+  "github.com/accuknox/SentryFlow/pkg/config"
+  "github.com/accuknox/SentryFlow/pkg/receiver"
+  "github.com/accuknox/SentryFlow/pkg/util"
 )
 ```
 
 ## Pull Requests and Code Reviews
 
-We use GitHub [pull requests](https://github.com/5GSEC/SentryFlow/pulls) for code contributions. All submissions,
+We use GitHub [pull requests](https://github.com/accuknox/SentryFlow/pulls) for code contributions. All submissions,
 including
 those from project members, require review before merging.
 We typically aim for two approvals per pull request, with reviews happening within a week or two.

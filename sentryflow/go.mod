@@ -1,9 +1,9 @@
-module github.com/5GSEC/SentryFlow/sentryflow
+module github.com/accuknox/SentryFlow/sentryflow
 
 go 1.24.1
 
 require (
-	github.com/5GSEC/SentryFlow/protobuf/golang v0.0.0-00010101000000-000000000000
+	github.com/accuknox/SentryFlow/protobuf/golang v0.0.0-00010101000000-000000000000
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
@@ -77,4 +77,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/5GSEC/SentryFlow/protobuf/golang => ../protobuf/golang
+replace github.com/accuknox/SentryFlow/protobuf/golang => ../protobuf/golang

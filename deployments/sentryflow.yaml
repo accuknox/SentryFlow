@@ -77,7 +77,7 @@ data:
       server:
         port: 8081
       envoy:
-        uri: 5gsec/sentryflow-httpfilter:latest
+        uri: public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:latest
 
     receivers:
       serviceMeshes:
@@ -108,7 +108,7 @@ spec:
       serviceAccountName: sentryflow
       containers:
         - name: sentryflow
-          image: docker.io/5gsec/sentryflow:latest
+          image: public.ecr.aws/k9v9d5v2/sentryflow:latest
           imagePullPolicy: Always
           args:
             - --config

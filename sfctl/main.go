@@ -4,7 +4,7 @@
 package main
 
 import (
-	"github.com/5GSEC/SentryFlow/sfctl/cmd"
+	"github.com/accuknox/SentryFlow/sfctl/cmd"
 )
 
 func main() {

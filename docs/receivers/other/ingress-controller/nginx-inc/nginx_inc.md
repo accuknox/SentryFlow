@@ -170,7 +170,7 @@ data:
 4. Download SentryFlow manifest file
 
   ```shell
-  curl -sO https://raw.githubusercontent.com/5GSEC/SentryFlow/refs/heads/main/deployments/sentryflow.yaml
+  curl -sO https://raw.githubusercontent.com/accuknox/SentryFlow/refs/heads/main/deployments/sentryflow.yaml
   ```
 
 5. Update the `.receivers` configuration in `sentryflow` [configmap](../../../../../deployments/sentryflow.yaml) as

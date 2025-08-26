@@ -6,11 +6,11 @@ package client
 import (
 	"fmt"
 
-	pb "github.com/5GSEC/SentryFlow/protobuf/golang"
+	pb "github.com/accuknox/SentryFlow/protobuf/golang"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/5GSEC/SentryFlow/sfctl/pkg/util"
+	"github.com/accuknox/SentryFlow/sfctl/pkg/util"
 )
 
 func NewSentryFlowClient(port int64) (pb.SentryFlowClient, func()) {

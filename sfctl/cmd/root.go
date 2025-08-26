@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/5GSEC/SentryFlow/sfctl/pkg/apievent"
-	"github.com/5GSEC/SentryFlow/sfctl/pkg/version"
+	"github.com/accuknox/SentryFlow/sfctl/pkg/apievent"
+	"github.com/accuknox/SentryFlow/sfctl/pkg/version"
 )
 
 var (

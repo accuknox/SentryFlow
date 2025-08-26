@@ -10,10 +10,10 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/5GSEC/SentryFlow/sentryflow/pkg/config"
-	"github.com/5GSEC/SentryFlow/sentryflow/pkg/receiver/other/nginx/nginxinc"
-	istiosidecar "github.com/5GSEC/SentryFlow/sentryflow/pkg/receiver/svcmesh/istio/sidecar"
-	"github.com/5GSEC/SentryFlow/sentryflow/pkg/util"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/config"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/other/nginx/nginxinc"
+	istiosidecar "github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/svcmesh/istio/sidecar"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
 )
 
 // Init initializes the API event sources based on the provided configuration. It

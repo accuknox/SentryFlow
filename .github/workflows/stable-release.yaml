@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   release-sentryflow-image:
-    if: ${{ github.repository == '5GSEC/sentryflow' }}
+    if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push sentryflow image
     uses: ./.github/workflows/release-image.yaml
     with:
@@ -25,7 +25,7 @@ jobs:
     secrets: inherit
 
   release-envoy-filter-image:
-    if: ${{ github.repository == '5GSEC/sentryflow' }}
+    if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push envoyfilter's image
     uses: ./.github/workflows/release-image.yaml
     with:
@@ -34,7 +34,7 @@ jobs:
     secrets: inherit
 
   update-image-tags-in-helm-charts:
-    if: ${{ github.repository == '5GSEC/sentryflow' }}
+    if: ${{ github.repository == 'accuknox/sentryflow' }}
     needs: [ release-sentryflow-image ]
     permissions:
       pull-requests: write

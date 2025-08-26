@@ -93,11 +93,11 @@ This example can be run with docker compose and has a matching [envoy configurat
   ```
 
 - Update the value of `filters.envoy.uri` with the latest image in
-  SentryFlow's [configMap](https://github.com/5GSEC/SentryFlow/blob/main/deployments/sentryflow.yaml#L68)
+  SentryFlow's [configMap](https://github.com/accuknox/SentryFlow/blob/main/deployments/sentryflow.yaml#L68)
 
 - Deploy SentryFlow
   ```shell
-  kubectl apply -f https://raw.githubusercontent.com/5GSEC/SentryFlow/refs/heads/main/deployments/sentryflow.yaml
+  kubectl apply -f https://raw.githubusercontent.com/accuknox/SentryFlow/refs/heads/main/deployments/sentryflow.yaml
   ```
 
 - Enable the envoy proxy injection by labeling the namespace in which you'll deploy workload:

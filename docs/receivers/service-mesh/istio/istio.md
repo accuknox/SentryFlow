@@ -28,7 +28,7 @@ steps:
 1. Download SentryFlow manifest file
 
   ```shell
-  curl -sO https://raw.githubusercontent.com/5GSEC/SentryFlow/refs/heads/main/deployments/sentryflow.yaml
+  curl -sO https://raw.githubusercontent.com/accuknox/SentryFlow/refs/heads/main/deployments/sentryflow.yaml
   ```
 
 2. Update the `.receivers` configuration in `sentryflow` [configmap](../../../../deployments/sentryflow.yaml) as
@@ -42,7 +42,7 @@ steps:
     # Envoy filter is required for `istio-sidecar` service-mesh receiver.
     # Leave it as it is unless you want to use your filter.
     envoy:
-      uri: 5gsec/sentryflow-httpfilter:v0.1
+      uri: public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:v0.1
 
   receivers:
     serviceMeshes:

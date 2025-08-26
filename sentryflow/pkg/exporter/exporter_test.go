@@ -21,7 +21,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 	"k8s.io/apimachinery/pkg/util/rand"
 
-	protobuf "github.com/5GSEC/SentryFlow/protobuf/golang"
+	protobuf "github.com/accuknox/SentryFlow/protobuf/golang"
 )
 
 func Test_exporter_GetAPIEvent(t *testing.T) {
