@@ -14,24 +14,84 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: public.ecr.aws/k9v9d5v2
+
 jobs:
   release-sentryflow-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push sentryflow image
-    uses: ./.github/workflows/release-image.yaml
-    with:
-      WORKING_DIRECTORY: ./sentryflow
-      NAME: sentryflow
-    secrets: inherit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get tag
+        id: tag
+        run: |
+          if [ ${{ github.ref }} == "refs/heads/main" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Docker build, scan and push to ECR
+        uses: accuknox/common-gh-actions/actions/docker-build-scan-push@main
+        with:
+          docker_context: ./sentryflow
+          dockerfile_path: ./sentryflow/Dockerfile
+          image_name: sentryflow
+          repository_name: ${{ env.ECR_REPOSITORY }}
+          tag: ${{ steps.tag.outputs.tag }}
+          registry_type: public
+          disable_scan: true
 
   release-envoy-filter-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push envoyfilter's image
-    uses: ./.github/workflows/release-image.yaml
-    with:
-      WORKING_DIRECTORY: filter/envoy/envoy-wasm-filters
-      NAME: sentryflow-httpfilter
-    secrets: inherit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get tag
+        id: tag
+        run: |
+          if [ ${{ github.ref }} == "refs/heads/main" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Docker build, scan and push to ECR
+        uses: accuknox/common-gh-actions/actions/docker-build-scan-push@main
+        with:
+          docker_context: filter/envoy/envoy-wasm-filters
+          dockerfile_path: filter/envoy/envoy-wasm-filters/Dockerfile
+          image_name: sentryflow-httpfilter
+          repository_name: ${{ env.ECR_REPOSITORY }}
+          tag: ${{ steps.tag.outputs.tag }}
+          registry_type: public
+          disable_scan: true
 
   update-image-tags-in-helm-charts:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
