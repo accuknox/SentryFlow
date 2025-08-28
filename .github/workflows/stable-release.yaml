@@ -46,16 +46,16 @@ jobs:
             echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Docker build, scan and push to ECR
-        uses: ./github/workflows/release-image.yaml
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
         with:
-          docker_context: ./sentryflow
-          dockerfile_path: ./sentryflow/Dockerfile
-          image_name: sentryflow
-          repository_name: ${{ env.ECR_REPOSITORY }}
-          tag: ${{ steps.tag.outputs.tag }}
-          registry_type: public
-          disable_scan: true
+          context: ./sentryflow
+          file: ./sentryflow/Dockerfile
+          push: true
+          tags: ${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }}
 
   release-envoy-filter-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
@@ -82,16 +82,16 @@ jobs:
             echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Docker build, scan and push to ECR
-        uses: ./github/workflows/release-helm-charts.yaml
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
         with:
-          docker_context: filter/envoy/envoy-wasm-filters
-          dockerfile_path: filter/envoy/envoy-wasm-filters/Dockerfile
-          image_name: sentryflow-httpfilter
-          repository_name: ${{ env.ECR_REPOSITORY }}
-          tag: ${{ steps.tag.outputs.tag }}
-          registry_type: public
-          disable_scan: true
+          context: filter/envoy/envoy-wasm-filters
+          file: filter/envoy/envoy-wasm-filters/Dockerfile
+          push: true
+          tags: ${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.tag }}
 
   update-image-tags-in-helm-charts:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
