@@ -47,7 +47,7 @@ jobs:
           fi
 
       - name: Docker build, scan and push to ECR
-        uses: accuknox/common-gh-actions/actions/docker-build-scan-push@main
+        uses: ./github/workflows/release-image.yaml
         with:
           docker_context: ./sentryflow
           dockerfile_path: ./sentryflow/Dockerfile
@@ -83,7 +83,7 @@ jobs:
           fi
 
       - name: Docker build, scan and push to ECR
-        uses: accuknox/common-gh-actions/actions/docker-build-scan-push@main
+        uses: ./github/workflows/release-helm-charts.yaml
         with:
           docker_context: filter/envoy/envoy-wasm-filters
           dockerfile_path: filter/envoy/envoy-wasm-filters/Dockerfile
