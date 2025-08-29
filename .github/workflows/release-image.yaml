@@ -14,7 +14,7 @@ jobs:
   release-sentryflow-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push sentryflow image
-    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yam@sentryflow-docker-push
+    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
     with:
       DOCKER_CONTEXT: "/sentryflow"
       DOCKERFILE:: "./sentryflow/Dockerfile"
