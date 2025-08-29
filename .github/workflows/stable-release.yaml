@@ -18,24 +18,32 @@ jobs:
   release-sentryflow-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push sentryflow image
-    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@main
+    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
     with:
-      aws-access-key-id:  ${{ secrets.AWS_DEV_ACCESS_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
-      aws-region: us-east-1
-  
+      DOCKER_CONTEXT: ./sentryflow
+      DOCKERFILE: ./sentryflow/Dockerfile
+      IMAGE_NAME: sentryflow
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+      GIT_KEY: ${{ secrets.GIT_KEY }}
+
   release-envoy-filter-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push envoyfilters image
-    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@main
+    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
     with:
-      aws-access-key-id:  ${{ secrets.AWS_DEV_ACCESS_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
-      aws-region: us-east-1
+      DOCKER_CONTEXT: filter/envoy/envoy-wasm-filters
+      DOCKERFILE: filter/envoy/envoy-wasm-filters/Dockerfile
+      IMAGE_NAME: sentryflow-httpfilter
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+      GIT_KEY: ${{ secrets.GIT_KEY }}
 
   update-image-tags-in-helm-charts:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
-    needs: [ release-sentryflow-image ]
+    needs: [ release-sentryflow-image, release-envoy-filter-image ]
     permissions:
       pull-requests: write
       contents: write
