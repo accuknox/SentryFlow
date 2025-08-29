@@ -1,3 +1,24 @@
+Skip to content
+Navigation Menu
+accuknox
+SentryFlow
+
+Type / to search
+Code
+Issues
+Pull requests
+Actions
+Projects
+Wiki
+Security
+Insights
+Settings
+.github/workflows/stable-release.yaml
+Update release-image.yaml #23
+Jobs
+Run details
+Workflow file for this run
+.github/workflows/stable-release.yaml at be3e8ad
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024
 
@@ -58,7 +79,6 @@ jobs:
         run: |
           aws ecr-public get-login-password --region ${{ inputs.AWS_REGION }} \
             | docker login --username AWS --password-stdin ${{ inputs.REGISTRY }}
-
       - name: Determine version
         id: vars
         run: |
@@ -67,7 +87,6 @@ jobs:
           else
             echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
           fi
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
