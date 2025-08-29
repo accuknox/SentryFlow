@@ -7,14 +7,12 @@ on:
   create:
     tags:
       - "v*"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag (optional, used if manually triggered)"
-        type: string
-        required: false
 
 permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   release-sentryflow-image:
@@ -22,24 +20,24 @@ jobs:
     name: Build and push sentryflow image
     uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
     with:
-      DOCKER_CONTEXT: "/sentryflow"
+      DOCKER_CONTEXT: "./sentryflow"
       DOCKERFILE: "./sentryflow/Dockerfile"
       IMAGE_NAME: "sentryflow"
-      REGISTRY: "public.ecr.aws/k9v9d5v2"
+    secrets: inherit
 
   release-envoy-filter-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push envoyfilters image
     uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
     with:
-      DOCKER_CONTEXT: "/filter/envoy/envoy-wasm-filters"
-      DOCKERFILE: "./filter/envoy/envoy-wasm-filters/Dockerfile"
-      IMAGE_NAME: "envoy-filter"
-      REGISTRY: "public.ecr.aws/k9v9d5v2"
-      
+      DOCKER_CONTEXT: "filter/envoy/envoy-wasm-filters"
+      DOCKERFILE: "filter/envoy/envoy-wasm-filters/Dockerfile"
+      IMAGE_NAME: "sentryflow-httpfilter"
+    secrets: inherit
+
   update-image-tags-in-helm-charts:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
-    needs: [ release-sentryflow-image, release-envoy-filter-image ]
+    needs: [ release-sentryflow-image ]
     permissions:
       pull-requests: write
       contents: write
@@ -51,9 +49,7 @@ jobs:
       - name: Get tag
         id: tag
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
-          elif [ "${GITHUB_REF}" == "refs/heads/main" ]; then
+          if [ "${GITHUB_REF}" == "refs/heads/main" ]; then
             echo "tag=latest" >> $GITHUB_OUTPUT
           else
             echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
