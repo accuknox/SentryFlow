@@ -17,7 +17,7 @@ jobs:
     uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
     with:
       DOCKER_CONTEXT: "/sentryflow"
-      DOCKERFILE:: "./sentryflow/Dockerfile"
+      DOCKERFILE: "./sentryflow/Dockerfile"
       IMAGE_NAME: "sentryflow"
       REGISTRY: "public.ecr.aws/k9v9d5v2"
 
