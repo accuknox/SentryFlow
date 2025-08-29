@@ -18,20 +18,20 @@ jobs:
   release-sentryflow-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push sentryflow image
-    uses: ./.github/workflows/release-image.yaml
+    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@main
     with:
-      WORKING_DIRECTORY: ./sentryflow
-      NAME: sentryflow
-    secrets: inherit
-
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      aws-region: us-east-1
+  
   release-envoy-filter-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push envoyfilter's image
-    uses: ./.github/workflows/release-image.yaml
+    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@main
     with:
-      WORKING_DIRECTORY: filter/envoy/envoy-wasm-filters
-      NAME: sentryflow-httpfilter
-    secrets: inherit
+       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+       aws-region: us-east-1
 
   update-image-tags-in-helm-charts:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
