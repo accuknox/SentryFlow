@@ -35,7 +35,7 @@ jobs:
     with:
       DOCKER_CONTEXT: filter/envoy/envoy-wasm-filters
       DOCKERFILE: filter/envoy/envoy-wasm-filters/Dockerfile
-      IMAGE_NAME: envoy-httpfilter
+      IMAGE_NAME: sentryflow-httpfilter
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
