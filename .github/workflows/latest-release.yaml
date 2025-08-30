@@ -36,7 +36,7 @@ jobs:
     needs: [ files-changed ]
     if: ${{ github.repository == 'accuknox/sentryflow' && needs.files-changed.outputs.sentryflow == 'true' }}
     name: Build and push sentryflow's image
-    uses: ./.github/workflows/release-image.yaml
+    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
     with:
       DOCKER_CONTEXT: .
       DOCKERFILE: ./sentryflow/Dockerfile
@@ -50,7 +50,7 @@ jobs:
     needs: [ files-changed ]
     if: ${{ github.repository == 'accuknox/sentryflow' && needs.files-changed.outputs.envoyfilter == 'true' }}
     name: Build and push envoyfilter's image
-    uses: ./.github/workflows/release-image.yaml
+    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
     with:
       DOCKER_CONTEXT: filter/envoy/envoy-wasm-filters
       DOCKERFILE: filter/envoy/envoy-wasm-filters/Dockerfile
