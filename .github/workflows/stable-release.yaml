@@ -21,7 +21,7 @@ jobs:
     name: Build and push sentryflow image
     uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
     with:
-      DOCKER_CONTEXT: ./sentryflow
+      DOCKER_CONTEXT: .
       DOCKERFILE: ./sentryflow/Dockerfile
       IMAGE_NAME: sentryflow
     secrets:
