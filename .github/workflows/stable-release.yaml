@@ -46,9 +46,10 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    uses: accuknox/accuknox-jobs/.github/workflows/release-helm-charts.yaml@sentryflow-docker-push
+    uses: ./.github/workflows/release-helm-charts.yaml
     with: 
       tag: "latest"
+      helm_repo: "repo_name"
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
