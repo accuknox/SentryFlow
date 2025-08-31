@@ -19,47 +19,25 @@ on:
         type: string
         required: false
         default: "deployments"
-    secrets:   
+      registry_type:
+        description: "ECR registry type (public or private)"
+        type: string
+        required: false
+        default: "private"
+    secrets:
       AWS_ACCESS_KEY_ID:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
 
 jobs:
-  tag-validate:
+  release_helm_charts:
     runs-on: ubuntu-latest
-    if: startsWith(inputs.tag, 'v')
-    steps:
-      - name: Validate SemVer tag
-        uses: rubenesp87/semver-validation-action@0.1.0
-        with:
-          version: ${{ inputs.tag }}
-
-  helm_chart_validation:
-    runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install Helm
-        run: |
-          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-          chmod 700 get_helm.sh
-          ./get_helm.sh
-
-      - name: Validate Helm Charts
-        run: |
-          for CHART in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
-            helm lint ${{ inputs.chart_path }}/$CHART
-            helm template ${{ inputs.chart_path }}/$CHART --dry-run > /dev/null
-          done
-
-  helm_push_to_ecr:
-    runs-on: ubuntu-latest
-    needs: [tag-validate, helm_chart_validation]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -68,27 +46,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
 
-      - name: Install Helm
-        run: |
-          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-          chmod 700 get_helm.sh
-          ./get_helm.sh
-
-      - name: Login to AWS ECR
-        run: |
-          aws ecr get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin ${{ inputs.helm_repo }}
-
-      - name: Chart versioning
-        run: |
-          for CHART in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
-            sed -i "s/^version:.*/version: ${{ inputs.tag }}/" ${{ inputs.chart_path }}/$CHART/Chart.yaml
-            sed -i "s/^appVersion:.*/appVersion: ${{ inputs.tag }}/" ${{ inputs.chart_path }}/$CHART/Chart.yaml
-          done
-
-      - name: Package and Push Helm Charts
-        run: |
-          for CHART in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
-            helm package ${{ inputs.chart_path }}/$CHART --destination ${{ inputs.chart_path }}
-            HELM_PACKAGE="${{ inputs.chart_path }}/$(basename $CHART)-${{ inputs.tag }}.tgz"
-            helm push $HELM_PACKAGE oci://${{ inputs.helm_repo }}
-          done
+      - name: Push Helm chart to ECR
+        uses: accuknox/common-gh-actions/actions/helm-push-new@main
+        with:
+          chart-path: ${{ inputs.chart_path }}
+          ecr-repo: ${{ inputs.helm_repo }}
+          ecr-region: us-east-2
+          version: ${{ inputs.tag }}
+          type: ${{ inputs.registry_type }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
