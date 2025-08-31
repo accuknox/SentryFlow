@@ -1,24 +1,29 @@
-name: Accuknox-Job Workflow
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024 Authors of Accuknox
+
+name: Accuknox-Job Workflow (Reusable)
 
 on:
-  push:
-    tags:
-    - "v[0-9]+.[0-9]+.[0-9]+"
-    - "v[0-9]+.[0-9]+.[0-9]+-*"
-  pull_request_target:
-    branches:
-      - "*" 
-
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag or version"
+        required: true
+        type: string
+      helm_repo:
+        description: "AWS ECR repository URL for     Helm charts"
+        required: true
+        type: string
 
 jobs:
   tag-validate:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(inputs.tag, 'v')
     steps:
-    - uses: rubenesp87/semver-validation-action@0.1.0
-      with:
-       version: ${{ github.ref_name }}
-
+      - name: Validate SemVer tag
+        uses: rubenesp87/semver-validation-action@0.1.0
+        with:
+          version: ${{ inputs.tag }}
 
   helm_chart_validation:
     runs-on: ubuntu-latest
@@ -36,7 +41,7 @@ jobs:
         run: |
           helm lint cis-k8s-job
           helm template cis-k8s-job --dry-run > /dev/null
-          
+
       - name: Validate k8s-risk-assessment-job
         run: |
           helm lint k8s-risk-assessment-job
@@ -54,7 +59,7 @@ jobs:
 
   helm_push_to_ecr:
     runs-on: ubuntu-latest
-    needs: [helm_chart_validation,tag-validate]
+    needs: [tag-validate, helm_chart_validation]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -74,17 +79,14 @@ jobs:
 
       - name: Login to AWS ECR
         run: |
-          aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin ${{ secrets.REPO }}
+          aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin ${{ inputs.helm_repo }}
 
-
-      - name: Chart versioning 
-        if: ( github.event_name != 'pull_request' && github.event_name != 'pull_request_target' )
+      - name: Chart versioning
         shell: bash
-        id: chart-version
         run: |
           for CHART_DIR in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
-            sed -i "s/^version:.*$/version: ${{ github.ref_name }}/" $CHART_DIR/Chart.yaml
-            sed -i "s/^appVersion:.*$/appVersion: ${{ github.ref_name }}/" $CHART_DIR/Chart.yaml
+            sed -i "s/^version:.*$/version: ${{ inputs.tag }}/" $CHART_DIR/Chart.yaml
+            sed -i "s/^appVersion:.*$/appVersion: ${{ inputs.tag }}/" $CHART_DIR/Chart.yaml
           done
 
       - name: Package and Push Helm Charts
@@ -92,5 +94,5 @@ jobs:
           for CHART_DIR in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
             helm package $CHART_DIR
             HELM_PACKAGE=$(ls $CHART_DIR-*.tgz)
-            helm push $HELM_PACKAGE oci://${{ secrets.REPO }}
-          done     
+            helm push $HELM_PACKAGE oci://${{ inputs.helm_repo }}
+          done
