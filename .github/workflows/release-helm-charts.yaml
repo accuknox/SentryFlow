@@ -23,7 +23,7 @@ on:
         description: "Type of ECR registry (private or public)"
         required: false
         type: string
-        default: "private"
+        default: "public"
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
