@@ -11,12 +11,12 @@ on:
         required: true
         type: string
       helm_repo:
-        description: "AWS ECR repository URL for     Helm charts"
+        description: "AWS ECR repository URL for Helm charts"
         required: true
         type: string
       chart_path:
         description: "Path to Helm chart directory"
-        type: "string"
+        type: string
         required: false
         default: "deployments"
 
@@ -42,25 +42,12 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
-      - name: Validate cis-k8s-job
+      - name: Validate Helm Charts
         run: |
-          helm lint cis-k8s-job
-          helm template cis-k8s-job --dry-run > /dev/null
-
-      - name: Validate k8s-risk-assessment-job
-        run: |
-          helm lint k8s-risk-assessment-job
-          helm template k8s-risk-assessment-job --dry-run > /dev/null
-
-      - name: Validate k8tls-job
-        run: |
-          helm lint k8tls-job
-          helm template k8tls-job --dry-run > /dev/null
-
-      - name: Validate kiem-job
-        run: |
-          helm lint kiem-job
-          helm template kiem-job --dry-run > /dev/null
+          for CHART in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
+            helm lint ${{ inputs.chart_path }}/$CHART
+            helm template ${{ inputs.chart_path }}/$CHART --dry-run > /dev/null
+          done
 
   helm_push_to_ecr:
     runs-on: ubuntu-latest
@@ -84,20 +71,19 @@ jobs:
 
       - name: Login to AWS ECR
         run: |
-          aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin ${{ inputs.helm_repo }}
+          aws ecr get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin ${{ inputs.helm_repo }}
 
       - name: Chart versioning
-        shell: bash
         run: |
-          for CHART_DIR in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
-            sed -i "s/^version:.*$/version: ${{ inputs.tag }}/" $CHART_DIR/Chart.yaml
-            sed -i "s/^appVersion:.*$/appVersion: ${{ inputs.tag }}/" $CHART_DIR/Chart.yaml
+          for CHART in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
+            sed -i "s/^version:.*/version: ${{ inputs.tag }}/" ${{ inputs.chart_path }}/$CHART/Chart.yaml
+            sed -i "s/^appVersion:.*/appVersion: ${{ inputs.tag }}/" ${{ inputs.chart_path }}/$CHART/Chart.yaml
           done
 
       - name: Package and Push Helm Charts
         run: |
-          for CHART_DIR in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
-            helm package $CHART_DIR
-            HELM_PACKAGE=$(ls $CHART_DIR-*.tgz)
+          for CHART in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
+            helm package ${{ inputs.chart_path }}/$CHART --destination ${{ inputs.chart_path }}
+            HELM_PACKAGE="${{ inputs.chart_path }}/$(basename $CHART)-${{ inputs.tag }}.tgz"
             helm push $HELM_PACKAGE oci://${{ inputs.helm_repo }}
           done
