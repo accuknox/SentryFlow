@@ -22,7 +22,7 @@ RUN go mod download
 COPY sentryflow/cmd cmd/
 COPY sentryflow/pkg pkg/
 COPY sentryflow/main.go main.go
-COPY sentryflow/Makefile Makefile
+COPY Makefile Makefile
 
 WORKDIR /
 
