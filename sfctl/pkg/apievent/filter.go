@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	pb "github.com/5GSEC/SentryFlow/protobuf/golang"
+	pb "github.com/accuknox/SentryFlow/protobuf/golang"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

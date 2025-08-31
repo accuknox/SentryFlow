@@ -13,7 +13,7 @@ import (
 
 	"go.uber.org/zap"
 
-	protobuf "github.com/5GSEC/SentryFlow/protobuf/golang"
+	protobuf "github.com/accuknox/SentryFlow/protobuf/golang"
 )
 
 func Test_healthzHandler(t *testing.T) {
