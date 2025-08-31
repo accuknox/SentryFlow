@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 Authors of Accuknox
 
-name: Accuknox-Job Workflow (Reusable)
+name: Helm Chart Push to ECR (Reusable)
 
 on:
   workflow_call:
     inputs:
       tag:
-        description: "Release tag or version"
+        description: "Release tag or version to set in Helm charts"
         required: true
         type: string
       helm_repo:
@@ -15,14 +15,14 @@ on:
         required: true
         type: string
       chart_path:
-        description: "Path to Helm chart directory"
-        type: string
+        description: "Path to the Helm chart directory"
         required: false
+        type: string
         default: "deployments"
       registry_type:
-        description: "ECR registry type (public or private)"
-        type: string
+        description: "Type of ECR registry (private or public)"
         required: false
+        type: string
         default: "private"
     secrets:
       AWS_ACCESS_KEY_ID:
@@ -31,28 +31,38 @@ on:
         required: true
 
 jobs:
-  release_helm_charts:
+  push_helm_chart:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
 
-      - name: Push Helm chart to ECR
-        uses: accuknox/common-gh-actions/actions/helm-push-new@main
-        with:
-          chart-path: ${{ inputs.chart_path }}
-          ecr-repo: ${{ inputs.helm_repo }}
-          ecr-region: us-east-2
-          version: ${{ inputs.tag }}
-          type: ${{ inputs.registry_type }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Install Helm
+        run: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+
+      - name: Set chart version
+        run: |
+          for CHART in $(ls ${{ inputs.chart_path }}); do
+            sed -i "s/^version:.*/version: ${{ inputs.tag }}/" ${{ inputs.chart_path }}/$CHART/Chart.yaml
+            sed -i "s/^appVersion:.*/appVersion: ${{ inputs.tag }}/" ${{ inputs.chart_path }}/$CHART/Chart.yaml
+          done
+
+      - name: Package and push Helm charts to ECR
+        run: |
+          for CHART in $(ls ${{ inputs.chart_path }}); do
+            helm package ${{ inputs.chart_path }}/$CHART --destination ${{ inputs.chart_path }}
+            HELM_PACKAGE="${{ inputs.chart_path }}/$CHART-${{ inputs.tag }}.tgz"
+            helm push $HELM_PACKAGE oci://${{ inputs.helm_repo }}
+          done
