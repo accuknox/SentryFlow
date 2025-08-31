@@ -50,7 +50,6 @@ jobs:
     with: 
       tag: "latest"
       helm_repo: "956994857092.dkr.ecr.us-east-2.amazonaws.com"
-      aws-region: "us-east-2"
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
