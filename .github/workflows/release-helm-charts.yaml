@@ -52,6 +52,18 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
+      - name: Login to ECR
+        run: |
+          if [ "${{ inputs.registry_type }}" = "public" ]; then
+            echo "Logging into Amazon Public ECR..."
+            aws ecr-public get-login-password --region us-east-1 \
+              | helm registry login -u AWS --password-stdin public.ecr.aws
+          else
+            echo "Logging into Amazon Private ECR..."
+            aws ecr get-login-password --region us-east-2 \
+              | helm registry login -u AWS --password-stdin ${{ inputs.helm_repo }}
+          fi
+
       - name: Update chart versions
         run: |
           for CHART in ${{ inputs.chart_path }}/*; do
