@@ -18,7 +18,7 @@ import (
 	"os"
 	"strconv"
 
-	pb "github.com/5GSEC/SentryFlow/protobuf/golang"
+	pb "github.com/accuknox/SentryFlow/protobuf/golang"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 
-	"github.com/5GSEC/SentryFlow/sfctl/pkg/client"
+	"github.com/accuknox/SentryFlow/sfctl/pkg/client"
 )
 
 func startEventsStreaming(ctx context.Context, config string, k8sClientset kubernetes.Interface) error {

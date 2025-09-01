@@ -9,8 +9,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/5GSEC/SentryFlow/sfctl/pkg/client"
-	"github.com/5GSEC/SentryFlow/sfctl/pkg/util"
+	"github.com/accuknox/SentryFlow/sfctl/pkg/client"
+	"github.com/accuknox/SentryFlow/sfctl/pkg/util"
 )
 
 var (

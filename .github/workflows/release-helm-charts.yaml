@@ -1,47 +1,88 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2024 Authors of SentryFlow
+# Copyright 2024 Authors of Accuknox
 
-name: Release Helm charts
+name: Helm Chart Push to ECR (Reusable)
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       tag:
-        description: "Release tag which has to be updated"
-        type: "string"
+        description: "Release tag or version to set in Helm charts"
+        required: true
+        type: string
+      helm_repo:
+        description: "AWS ECR repository URL for Helm charts"
+        required: true
+        type: string
+      chart_path:
+        description: "Path to the Helm chart directory"
+        required: false
+        type: string
+        default: "deployments"
+      registry_type:
+        description: "Type of ECR registry (private or public)"
+        required: false
+        type: string
+        default: "public"
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
         required: true
 
 jobs:
-  release_helm_charts:
-    if: github.repository == '5GSEC/sentryflow'
-    permissions:
-      contents: write
+  push_helm_chart:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - name: Checkout source code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
       - name: Install Helm
-        uses: azure/setup-helm@v4
+        run: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
 
-      - name: Generate a token
-        id: generate-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.ACTIONS_APP_ID }}
-          private-key: ${{ secrets.ACTIONS_APP_PRIVATE_KEY }}
-          repositories: charts
+      - name: Login to ECR
+        run: |
+          if [ "${{ inputs.registry_type }}" = "public" ]; then
+            echo "Logging into Amazon Public ECR..."
+            aws ecr-public get-login-password --region us-east-1 \
+              | helm registry login -u AWS --password-stdin public.ecr.aws
+          else
+            echo "Logging into Amazon Private ECR..."
+            aws ecr get-login-password --region us-east-2 \
+              | helm registry login -u AWS --password-stdin ${{ inputs.helm_repo }}
+          fi
 
-      - name: Publish Helm chart
-        uses: stefanprodan/helm-gh-pages@master
-        with:
-          # Access token which can push to a different repo in the same org
-          token: ${{ steps.generate-token.outputs.token }}
-          charts_dir: deployments/
-          # repo where charts would be published
-          owner: 5GSEC
-          repository: charts
-          branch: gh-pages
-          charts_url: https://5gsec.github.io/charts/
-          commit_username: "github-actions[bot]"
-          commit_email: "github-actions[bot]@users.noreply.github.com"
+      - name: Update chart versions
+        run: |
+          for CHART in ${{ inputs.chart_path }}/*; do
+            if [ -d "$CHART" ] && [ -f "$CHART/Chart.yaml" ]; then
+              echo "Updating $CHART/Chart.yaml"
+              sed -i "s/^version:.*/version: ${{ inputs.tag }}/" "$CHART/Chart.yaml"
+              sed -i "s/^appVersion:.*/appVersion: ${{ inputs.tag }}/" "$CHART/Chart.yaml"
+            fi
+          done
+
+      - name: Package and push Helm charts to ECR
+        run: |
+          for CHART in ${{ inputs.chart_path }}/*; do
+            if [ -d "$CHART" ] && [ -f "$CHART/Chart.yaml" ]; then
+              echo "Packaging $CHART"
+              helm package "$CHART" --destination ${{ inputs.chart_path }}
+              CHART_NAME=$(basename "$CHART")
+              HELM_PACKAGE="${{ inputs.chart_path }}/$CHART_NAME-${{ inputs.tag }}.tgz"
+              echo "Pushing $HELM_PACKAGE to ${{ inputs.helm_repo }}"
+              helm push "$HELM_PACKAGE" oci://${{ inputs.helm_repo }}
+            fi
+          done
