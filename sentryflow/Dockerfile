@@ -15,8 +15,8 @@ COPY .git /.git
 
 WORKDIR /sentryflow
 
-COPY sentryflow/go.mod .
-COPY sentryflow/go.sum .
+COPY go.mod .
+COPY go.sum .
 RUN go mod download
 
 COPY cmd cmd/
