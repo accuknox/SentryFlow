@@ -19,8 +19,8 @@ COPY sentryflow/go.mod .
 COPY sentryflow/go.sum .
 RUN go mod download
 
-COPY sentryflow/cmd cmd/
-COPY sentryflow/pkg pkg/
+COPY cmd cmd/
+COPY pkg pkg/
 COPY main.go main.go
 COPY Makefile Makefile
 
