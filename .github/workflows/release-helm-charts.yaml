@@ -54,7 +54,7 @@ jobs:
           chart-path: ${{ inputs.chart_path }}
           ecr-region: ${{ env.AWS_REGION }}
           ecr-repo: ${{ inputs.ecr_repository }}
-          version: ${{ inputs.tag }}
+          version: "latest"
           type: ${{ inputs.registry_type }}
           aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
           aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
