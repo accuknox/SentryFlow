@@ -79,10 +79,9 @@ jobs:
           for CHART in ${{ inputs.chart_path }}/*; do
             if [ -d "$CHART" ] && [ -f "$CHART/Chart.yaml" ]; then
               echo "Packaging $CHART"
-              helm package "$CHART" --destination ${{ inputs.chart_path }}
-              CHART_NAME=$(basename "$CHART")
-              HELM_PACKAGE="${{ inputs.chart_path }}/$CHART_NAME-${{ inputs.tag }}.tgz"
-              echo "Pushing $HELM_PACKAGE to ${{ inputs.helm_repo }}"
-              helm push "$HELM_PACKAGE" oci://${{ inputs.helm_repo }}
+              # Capture the actual packaged file path
+              PACKAGE_FILE=$(helm package "$CHART" --destination ${{ inputs.chart_path }} | awk -F': ' '{print $2}')
+              echo "Pushing $PACKAGE_FILE to ${{ inputs.helm_repo }}"
+              helm push "$PACKAGE_FILE" oci://${{ inputs.helm_repo }}
             fi
           done
