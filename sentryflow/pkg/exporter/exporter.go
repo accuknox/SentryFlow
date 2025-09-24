@@ -68,7 +68,7 @@ func (e *exporter) GetAPIEvent(clientInfo *protobuf.ClientInfo, stream grpc.Serv
 
 func (e *exporter) addClientToList(uid string) chan *protobuf.APIEvent {
 	e.clients.Lock()
-	connChan := make(chan *protobuf.APIEvent)
+	connChan := make(chan *protobuf.APIEvent, 100)
 	e.clients.client[uid] = connChan
 	e.clients.Unlock()
 	return connChan
