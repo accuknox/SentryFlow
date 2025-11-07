@@ -22,11 +22,15 @@ receivers: # aka sources
 #    - name: istio-sidecar
 #      namespace: istio-system
 
-#  others:
+ others:
 #    - name: nginx-inc-ingress-controller
 #      namespace: default
 
 #    - name: nginx-webserver
+#
+#    - name: Azure-APIM
+#   
+#    - name: aws-api-gateway
 
 exporter:
   grpc:
