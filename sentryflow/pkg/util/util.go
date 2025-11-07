@@ -20,6 +20,8 @@ const (
 	OpenTelemetry                       = "otel"
 	NginxWebServer                      = "nginx-webserver"
 	NginxIncorporationIngressController = "nginx-inc-ingress-controller" // https://github.com/nginxinc/kubernetes-ingress/
+	AzureAPIM                           = "Azure-APIM"
+	AWSApiGateway                       = "aws-api-gateway"
 )
 
 func LoggerFromCtx(ctx context.Context) *zap.SugaredLogger {

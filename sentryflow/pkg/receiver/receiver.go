@@ -42,6 +42,10 @@ func Init(ctx context.Context, k8sClient client.Client, cfg *config.Config, wg *
 			switch other.Name {
 			case util.NginxWebServer:
 				logger.Info("Started nginx webserver receiver")
+			case util.AzureAPIM:
+				logger.Info("Started Azure APIM receiver")
+			case util.AWSApiGateway:
+				logger.Info("Started AWS API Gateway receiver")
 			case util.NginxIncorporationIngressController:
 				wg.Add(1)
 				go func() {
