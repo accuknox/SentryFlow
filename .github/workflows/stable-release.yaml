@@ -57,7 +57,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./sentryflow
+          context: .
           file: ./sentryflow/Dockerfile
           push: true
           tags: ${{ env.ECR_REPOSITORY }}/sentryflow:${{ steps.tag.outputs.tag }}
