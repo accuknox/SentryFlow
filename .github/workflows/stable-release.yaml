@@ -4,10 +4,9 @@
 name: Stable release
 
 on:
-  create:
-    tags:
-      - "v*"
-
+  push:
+    branches:
+      - main
 permissions: read-all
 
 concurrency:
