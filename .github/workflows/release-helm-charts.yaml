@@ -73,9 +73,21 @@ jobs:
 
       - name: Push Helm chart to ECR
         run: |
-           helm package ${{ inputs.chart_path }} --version ${{ inputs.tag }} --destination ./build
-           if [ "${{ inputs.registry_type }}" = "public" ]; then
-             helm push ./build/*.tgz oci://public.ecr.aws/k9v9d5v2
-           else
-             helm push ./build/*.tgz oci://${{ inputs.ecr_repository }}
-           fi
+         CHART_VERSION=${{ inputs.tag }}
+         CHART_PATH=${{ inputs.chart_path }}
+         BUILD_DIR=./build
+         PUBLIC_ECR_REPO="public.ecr.aws/k9v9d5v2/sentryflow-helm-charts"
+
+         echo "==> Packaging Helm chart..."
+         helm package $CHART_PATH --version $CHART_VERSION --destination $BUILD_DIR
+
+         CHART_NAME=$(yq e '.name' $CHART_PATH/Chart.yaml)
+         CHART_FILE="${BUILD_DIR}/${CHART_NAME}-${CHART_VERSION}.tgz"
+
+         echo "==> Logging in to Public ECR..."
+         aws ecr-public get-login-password --region us-east-1 | \
+         helm registry login --username AWS --password-stdin public.ecr.aws
+
+         echo "==> Pushing Helm chart to ${PUBLIC_ECR_REPO}:${CHART_VERSION}"
+         helm push $CHART_FILE oci://${PUBLIC_ECR_REPO} --version $CHART_VERSION
+
