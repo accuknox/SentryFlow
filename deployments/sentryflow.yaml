@@ -64,30 +64,30 @@ subjects:
     name: sentryflow
     namespace: sentryflow
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: sentryflow
-  namespace: sentryflow
-  labels:
-    app.kubernetes.io/part-of: sentryflow
-data:
-  config.yaml: |2-
-    filters:
-      server:
-        port: 8081
-      envoy:
-        uri: public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:latest
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: sentryflow
+#   namespace: sentryflow
+#   labels:
+#     app.kubernetes.io/part-of: sentryflow
+# data:
+#   config.yaml: |2-
+#     filters:
+#       server:
+#         port: 8081
+#       envoy:
+#         uri: public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:latest
 
-    receivers:
-      serviceMeshes:
-        - name: istio-sidecar
-          namespace: istio-system
+#     receivers:
+#       serviceMeshes:
+#         - name: istio-sidecar
+#           namespace: istio-system
 
-    exporter:
-      grpc:
-        port: 8080
----
+#     exporter:
+#       grpc:
+#         port: 8080
+# ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
