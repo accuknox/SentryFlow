@@ -19,7 +19,7 @@ on:
         description: "Path to Helm chart directory"
         type: "string"
         required: false
-        default: "deployments"
+        default: "deployments/sentryflow"
       registry_type:
         description: "ECR registry type (public or private)"
         type: "string"
