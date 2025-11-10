@@ -51,4 +51,4 @@ jobs:
       helm_repo: "public.ecr.aws/k9v9d5v2"
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}.github/workflows/release-helm-charts.yaml
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
