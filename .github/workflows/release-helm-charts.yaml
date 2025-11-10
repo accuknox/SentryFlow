@@ -14,7 +14,7 @@ on:
         description: "ECR repository URL for Helm charts"
         type: "string"
         required: false
-        default: "956994857092.dkr.ecr.us-east-2.amazonaws.com"
+        default: "956994857092.dkr.ecr.us-east-2.amazonaws.com/sentryflow-helm-charts"
       chart_path:
         description: "Path to Helm chart directory"
         type: "string"
@@ -24,7 +24,7 @@ on:
         description: "ECR registry type (public or private)"
         type: "string"
         required: false
-        default: "private"
+        default: "public"
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
