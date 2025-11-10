@@ -4,7 +4,7 @@
 name: Helm Chart Push to ECR (Reusable)
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       tag:
         description: "Release tag or version to set in Helm charts"
@@ -24,6 +24,11 @@ on:
         required: false
         type: string
         default: "public"
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
 
 jobs:
   push_helm_chart:
