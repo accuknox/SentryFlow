@@ -1,79 +1,87 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2024 Authors of SentryFlow
+# Copyright 2024 Authors of Accuknox
 
-name: Release Helm charts
+name: Helm Chart Push to ECR (Reusable)
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag which has to be updated"
-        type: "string"
-        required: true
-      ecr_repository:
-        description: "ECR repository URL for Helm charts"
-        type: "string"
-        required: false
-        default: "956994857092.dkr.ecr.us-east-2.amazonaws.com"
-      chart_path:
-        description: "Path to Helm chart directory"
-        type: "string"
-        required: false
-        default: "deployments/sentryflow"
-      registry_type:
-        description: "ECR registry type (public or private)"
-        type: "string"
-        required: false
-        default: "private"
-
   workflow_call:
     inputs:
       tag:
+        description: "Release tag or version to set in Helm charts"
         required: true
         type: string
-      ecr_repository:
-        required: false
+      helm_repo:
+        description: "AWS ECR repository URL for Helm charts"
+        required: true
         type: string
-        default: "956994857092.dkr.ecr.us-east-2.amazonaws.com"
       chart_path:
+        description: "Path to the Helm chart directory"
         required: false
         type: string
-        default: "deployments/sentryflow"
+        default: "deployments"
       registry_type:
+        description: "Type of ECR registry (private or public)"
         required: false
         type: string
-        default: "private"
-
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
-  AWS_REGION: us-east-2
+        default: "public"
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
 
 jobs:
-  release_helm_charts:
-    if: github.repository == 'accuknox/sentryflow'
+  push_helm_chart:
+    runs-on: ubuntu-latest
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout source code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
 
-      - name: Push Helm chart to ECR
-        uses: ./.github/actions/helm-push-ecr
-        with:
-          chart-path: ${{ inputs.chart_path }}
-          ecr-region: ${{ env.AWS_REGION }}
-          ecr-repo: ${{ inputs.ecr_repository }}
-          version: ${{ inputs.tag }}
-          type: ${{ inputs.registry_type }}
-          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
-          version-dir: "src"
+      - name: Install Helm
+        run: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+
+      - name: Login to ECR
+        run: |
+          if [ "${{ inputs.registry_type }}" = "public" ]; then
+            echo "Logging into Amazon Public ECR..."
+            aws ecr-public get-login-password --region us-east-1 \
+              | helm registry login -u AWS --password-stdin public.ecr.aws
+          else
+            echo "Logging into Amazon Private ECR..."
+            aws ecr get-login-password --region us-east-2 \
+              | helm registry login -u AWS --password-stdin ${{ inputs.helm_repo }}
+          fi
+
+      - name: Update chart versions
+        run: |
+          for CHART in ${{ inputs.chart_path }}/*; do
+            if [ -d "$CHART" ] && [ -f "$CHART/Chart.yaml" ]; then
+              echo "Updating $CHART/Chart.yaml"
+              sed -i "s/^version:.*/version: ${{ inputs.tag }}/" "$CHART/Chart.yaml"
+              sed -i "s/^appVersion:.*/appVersion: ${{ inputs.tag }}/" "$CHART/Chart.yaml"
+            fi
+          done
+
+      - name: Package and push Helm charts to ECR
+        run: |
+          for CHART in ${{ inputs.chart_path }}/*; do
+            if [ -d "$CHART" ] && [ -f "$CHART/Chart.yaml" ]; then
+              echo "Packaging $CHART"
+              PACKAGE_FILE=$(helm package "$CHART" --destination ${{ inputs.chart_path }} | awk -F': ' '{print $2}')
+              echo "Pushing $PACKAGE_FILE to ${{ inputs.helm_repo }}"
+              helm push "$PACKAGE_FILE" oci://${{ inputs.helm_repo }}
+            fi
+          done
