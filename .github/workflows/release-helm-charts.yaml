@@ -49,7 +49,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Push Helm chart to ECR
-        uses: accuknox/common-gh-actions/actions/helm-push@main
+        uses: ./.github/actions/helm-push-ecr
         with:
           chart-path: ${{ inputs.chart_path }}
           ecr-region: ${{ env.AWS_REGION }}

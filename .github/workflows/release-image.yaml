@@ -57,7 +57,7 @@ jobs:
           fi
 
       - name: Docker build, scan and push to ECR
-        uses: accuknox/common-gh-actions/actions/docker-build-scan-push@main
+        uses: ./.github/actions/docker-build-scan-push
         with:
           docker_context: ${{ inputs.WORKING_DIRECTORY }}
           dockerfile_path: ${{ inputs.WORKING_DIRECTORY }}/Dockerfile
