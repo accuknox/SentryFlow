@@ -14,7 +14,7 @@ on:
         description: "ECR repository URL for Helm charts"
         type: "string"
         required: false
-        default: "public.ecr.aws/k9v9d5v2/sentryflow-helm-charts"
+        default: "956994857092.dkr.ecr.us-east-2.amazonaws.com"
       chart_path:
         description: "Path to Helm chart directory"
         type: "string"
@@ -24,20 +24,19 @@ on:
         description: "ECR registry type (public or private)"
         type: "string"
         required: false
-        default: "public"
+        default: "private"
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
-  AWS_REGION: us-east-2 # default account region
+  AWS_REGION: us-east-2
 
 jobs:
   release_helm_charts:
     if: github.repository == 'accuknox/sentryflow'
-    runs-on: ubuntu-latest
     permissions:
       contents: read
-
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -49,44 +48,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set ECR Region based on Registry Type
-        id: set-region
-        run: |
-          if [ "${{ inputs.registry_type }}" = "public" ]; then
-            echo "ECR_REGION=us-east-1" >> $GITHUB_ENV
-          else
-            echo "ECR_REGION=${{ env.AWS_REGION }}" >> $GITHUB_ENV
-          fi
-          echo "Using ECR Region: $ECR_REGION"
-
-      - name: Authenticate to ECR (Public or Private)
-        run: |
-          if [ "${{ inputs.registry_type }}" = "public" ]; then
-            echo "Logging in to Public ECR..."
-            aws ecr-public get-login-password --region us-east-1 | \
-              helm registry login --username AWS --password-stdin public.ecr.aws
-          else
-            echo "Logging in to Private ECR..."
-            aws ecr get-login-password --region $ECR_REGION | \
-              helm registry login --username AWS --password-stdin ${{ inputs.ecr_repository }}
-          fi
-
       - name: Push Helm chart to ECR
-        run: |
-         CHART_VERSION=${{ inputs.tag }}
-         CHART_PATH=${{ inputs.chart_path }}
-         BUILD_DIR=./build
-         PUBLIC_ECR_REPO="public.ecr.aws/k9v9d5v2/sentryflow-helm-charts"
-
-         echo "==> Packaging Helm chart..."
-         helm package $CHART_PATH --version $CHART_VERSION --destination $BUILD_DIR
-
-         CHART_NAME=$(yq e '.name' $CHART_PATH/Chart.yaml)
-         CHART_FILE="${BUILD_DIR}/${CHART_NAME}-${CHART_VERSION}.tgz"
-
-         echo "==> Logging in to Public ECR..."
-         aws ecr-public get-login-password --region us-east-1 | \
-         helm registry login --username AWS --password-stdin public.ecr.aws
-
-         echo "==> Pushing Helm chart to ${PUBLIC_ECR_REPO}:${CHART_VERSION}"
-         helm push $CHART_FILE oci://${PUBLIC_ECR_REPO} --debug
+        uses: ./.github/actions/helm-push-ecr
+        with:
+          chart-path: ${{ inputs.chart_path }}
+          ecr-region: ${{ env.AWS_REGION }}
+          ecr-repo: ${{ inputs.ecr_repository }}
+          version: ${{ inputs.tag }}
+          type: ${{ inputs.registry_type }}
+          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
+          version-dir: "src"
