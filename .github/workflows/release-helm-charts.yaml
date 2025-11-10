@@ -89,5 +89,4 @@ jobs:
          helm registry login --username AWS --password-stdin public.ecr.aws
 
          echo "==> Pushing Helm chart to ${PUBLIC_ECR_REPO}:${CHART_VERSION}"
-         helm push $CHART_FILE oci://${PUBLIC_ECR_REPO} --version $CHART_VERSION
-
+         helm push $CHART_FILE oci://${PUBLIC_ECR_REPO} --debug
