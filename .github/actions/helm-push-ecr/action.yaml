@@ -1,0 +1,84 @@
+name: "Helm push to ECR"
+description: "Composite workflow to push a helm chart"
+inputs:
+  runs-on:
+    type: string
+    required: false
+    default: ubuntu-latest
+    description: "OS to run the job on"
+  chart-path:
+    required: true
+    description: "Helm chart path"
+    default: "."
+  ecr-region:
+    type: string
+    required: true
+    description: "ECR region"   
+  ecr-repo:
+    type: string
+    required: true
+    description: "ECR repo" 
+  version:   
+    type: string
+    required: true
+    description: "Chart versioning" 
+  type:  
+    type: string
+    required: false
+    description: "ECR repo type"
+    default: private
+  aws-access-key-id:
+    type: string
+    required: false
+    description: "aws-access-key-id"  
+  aws-secret-access-key: 
+    type: string
+    required: false
+    description: "aws-secret-access-key"
+  version-dir: 
+    type: string
+    required: true
+    description: "Version directory that release.txt"
+
+runs:
+  using: composite
+  steps:
+  - name: Configure AWS Credentials
+    uses: aws-actions/configure-aws-credentials@v2
+    with:
+      aws-access-key-id: ${{ inputs.aws-access-key-id }}
+      aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
+      aws-region: us-east-2
+  
+  - name: Authenticate ECR private authenticate
+    if: ( inputs.type == 'private')
+    shell: bash
+    id: ecr-private
+    run: aws ecr get-login-password --region  ${{ inputs.ecr-region }} | helm registry login --username AWS --password-stdin  ${{ inputs.ecr-repo }}
+  
+  - name: Authenticate ECR public authenticate
+    if: ( inputs.type == 'public')
+    shell: bash
+    id: ecr-public
+    run: aws ecr-public get-login-password --region  ${{ inputs.ecr-region }} | helm registry login --username AWS --password-stdin  ${{ inputs.ecr-repo }}
+  
+  - name: Chart versioning 
+    if: ( github.event_name != 'pull_request' && github.event_name != 'pull_request_target' )
+    shell: bash
+    id: chart-version
+    run: |
+      sed -i "s/^version:.*$/version: ${{ inputs.version }}/" ${{ inputs.chart-path }}/Chart.yaml
+      sed -i "s/^appVersion:.*$/appVersion: ${{ inputs.version }}/" ${{ inputs.chart-path }}/Chart.yaml
+
+
+  - name: helm push from ECR
+    if: ( github.event_name != 'pull_request' && github.event_name != 'pull_request_target' )
+    shell: bash
+    id: helm-push
+    run: | 
+      curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+      chmod 700 get_helm.sh
+      ./get_helm.sh --version v3.12.3
+      helm package ${{ inputs.chart-path }}
+      helm version
+      helm push $(ls *.tgz) oci://${{ inputs.ecr-repo }}
