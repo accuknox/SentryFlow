@@ -106,8 +106,7 @@ func validateIngressDeployAndConfigMap(ctx context.Context, cfg *config.Config, 
 		return fmt.Errorf("sentryflow http-snippets not found in nginx-incorporation ingress configmap")
 	}
 	expectedHttpSnippets := `js_path "/etc/nginx/njs/";
-subrequest_output_buffer_size 8k;
-js_shared_dict_zone zone=apievents:1M timeout=300s evict;
+subrequest_output_buffer_size 32k;
 js_import main from sentryflow.js;
 `
 	if !strings.Contains(httpSnippets, expectedHttpSnippets) {
@@ -118,10 +117,7 @@ js_import main from sentryflow.js;
 	if !exists {
 		return fmt.Errorf("sentryflow location-snippets not found in nginx-incorporation ingress configmap")
 	}
-	expectedLocationSnippets := `js_body_filter main.requestHandler buffer_type=buffer;
-mirror      /mirror_request;
-mirror_request_body on;
-`
+	expectedLocationSnippets := `js_body_filter main.requestHandler buffer_type=buffer;`
 	if !strings.Contains(locationSnippets, expectedLocationSnippets) {
 		return fmt.Errorf("sentryflow location-snippets were not properly configured in nginx-incorporation ingress configmap")
 	}
@@ -130,11 +126,7 @@ mirror_request_body on;
 	if !exists {
 		return fmt.Errorf("sentryflow server-snippets not found in nginx-incorporation ingress configmap")
 	}
-	expectedServerSnippets := `location /mirror_request {
-  internal;
-  js_content main.dispatchHttpCall;
-}
-location /sentryflow {
+	expectedServerSnippets := `location /sentryflow {
   internal;
   proxy_method      POST;
   proxy_set_header accept "application/json";
