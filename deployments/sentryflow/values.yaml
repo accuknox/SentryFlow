@@ -8,7 +8,7 @@ image:
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: v0.1
+  tag: v0.2
 # Arguments to pass SentryFlow container
 args:
   - --config
@@ -48,12 +48,12 @@ service:
   type: ClusterIP
   ports:
     - name: exporter
-      port: 8888 # Make sure to use the same port as `.exporter.grpc.port` field of `config`
-      targetPort: 8888 # Make sure to use the same port as `.filters.server.port` field of `config`
+      port: 8080 # Make sure to use the same port as `.exporter.grpc.port` field of `config`
+      targetPort: 8080 # Make sure to use the same port as `.filters.server.port` field of `config`
       protocol: TCP
     - name: receiver
-      port: 9999 # Make sure to use the same port as `.filters.server.port` field of `config`
-      targetPort: 9999 # Make sure to use the same port as `.filters.server.port` field of `config`
+      port: 8081 # Make sure to use the same port as `.filters.server.port` field of `config`
+      targetPort: 8081 # Make sure to use the same port as `.filters.server.port` field of `config`
       protocol: TCP
 resources:
   limits:
@@ -88,7 +88,7 @@ autoscaling:
 config:
   filters:
     server:
-      port: 9999
+      port: 8081
       # Envoy filter is required for `istio-sidecar` service-mesh receiver.
       # Uncomment the following if you want to use `istio-sidecar` traffic source
   #    envoy:
@@ -115,7 +115,7 @@ config:
   #    - name: nginx-webserver
   exporter:
     grpc:
-      port: 8888
+      port: 8080
 volumes:
   - name: sentryflow
     configMap:
