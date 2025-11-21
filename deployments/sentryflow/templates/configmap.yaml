@@ -5,10 +5,50 @@ metadata:
   labels:
     {{- include "sentryflow.labels" . | nindent 4 }}
     {{- with .Values.genericLabels }}
-        {{- toYaml . | nindent 4 }}
+      {{- toYaml . | nindent 4 }}
     {{- end }}
-{{- with .Values.config }}
 data:
   config.yaml: |2-
-    {{- toYaml . | nindent 4 }}
-{{- end }}
+    filters:
+      server:
+        port: {{ .Values.config.serverPort | default 8081 }}
+
+      {{- if .Values.config.receivers.nginxIngressController.enabled }}
+      nginxIngress:
+        deploymentName: {{ .Values.config.receivers.nginxIngressController.deploymentName }}
+        configMapName: {{ .Values.config.receivers.nginxIngressController.configMapName }}
+        sentryFlowNjsConfigMapName: {{ .Values.config.receivers.nginxIngressController.sentryFlowNjsConfigMapName | default "sentryflow-nginx-inc"}}
+      {{- end }}
+
+      {{- if .Values.config.receivers.istio.enabled }}
+      envoy:
+        uri: {{ .Values.config.receivers.istio.envoyFilterUri | default "public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:v0.1" }}
+      {{- end }}
+
+    receivers:
+      {{- if .Values.config.receivers.nginxIngressController.enabled }}
+      others:
+        - name: nginx-inc-ingress-controller
+          namespace: {{ .Values.config.receivers.nginxIngressController.namespace }}
+      {{- end }}
+
+      {{- if .Values.config.receivers.istio.enabled }}
+      serviceMeshes:
+        - name: istio-sidecar
+          namespace: {{ .Values.config.receivers.istio.namespace | default "istio-system" }}
+      {{- end }}
+
+      {{- if .Values.config.receivers.azureApim.enabled }}
+      others:
+        - name: Azure-APIM
+      {{- end }}
+
+      {{- if .Values.config.receivers.awsApigw.enabled }}
+      others:
+        - name: aws-api-gateway
+      {{- end }}
+
+    exporter:
+      grpc:
+        port: {{ .Values.config.grpcPort | default 8080 }}
+

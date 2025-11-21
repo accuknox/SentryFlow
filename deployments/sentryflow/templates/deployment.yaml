@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sentryflow.fullname" . }}
+  name: sentryflow
   labels:
     {{- include "sentryflow.labels" . | nindent 4 }}
     {{- with .Values.genericLabels }}
