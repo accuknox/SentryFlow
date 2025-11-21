@@ -105,11 +105,12 @@ func validateIngressDeployAndConfigMap(ctx context.Context, cfg *config.Config, 
 	if !exists {
 		return fmt.Errorf("sentryflow http-snippets not found in nginx-incorporation ingress configmap")
 	}
-	expectedHttpSnippets := `js_path "/etc/nginx/njs/";
-subrequest_output_buffer_size 8k;
-js_import main from sentryflow.js;
-`
-	if !strings.Contains(httpSnippets, expectedHttpSnippets) {
+	expectedHttpSnippets := `
+        js_path "/etc/nginx/njs/";
+        subrequest_output_buffer_size 32k;
+        js_import main from sentryflow.js;
+    `
+	if !SnippetsExist(httpSnippets, expectedHttpSnippets) {
 		return fmt.Errorf("sentryflow http-snippets were not properly configured in nginx-incorporation ingress configmap")
 	}
 
@@ -118,7 +119,7 @@ js_import main from sentryflow.js;
 		return fmt.Errorf("sentryflow location-snippets not found in nginx-incorporation ingress configmap")
 	}
 	expectedLocationSnippets := `js_body_filter main.requestHandler buffer_type=buffer;`
-	if !strings.Contains(locationSnippets, expectedLocationSnippets) {
+	if !SnippetsExist(locationSnippets, expectedLocationSnippets) {
 		return fmt.Errorf("sentryflow location-snippets were not properly configured in nginx-incorporation ingress configmap")
 	}
 
@@ -132,13 +133,11 @@ js_import main from sentryflow.js;
   proxy_set_header accept "application/json";
   proxy_set_header Content-Type "application/json";
 }
-`
-	// The server snippet might have different SentryFlow URL in `proxy_pass`
+` // The server snippet might have different SentryFlow URL in `proxy_pass`
 	// directive. To avoid potential conflicts, check without that directive.
-	if !strings.ContainsAny(serverSnippets, expectedServerSnippets) {
+	if !SnippetsExist(serverSnippets, expectedServerSnippets) {
 		return fmt.Errorf("sentryflow server-snippets were not properly configured in nginx-incorporation ingress configmap")
 	}
-
 	return nil
 }
 
@@ -150,4 +149,37 @@ func getIngressControllerDeploymentNamespace(cfg *config.Config) string {
 		}
 	}
 	return ""
+}
+
+// Checks if the exact snippet block exists in the recieved snippets key
+func SnippetsExist(recievedSnippets string, expectedSnippets string) bool {
+	// Split into lines and normalize
+	normalizeLine := func(s string) string {
+		return strings.TrimSpace(s)
+	}
+
+	sourceLines := strings.Split(recievedSnippets, "\n")
+	targetLines := strings.Split(expectedSnippets, "\n")
+
+	// Build a set of all lines in source
+	normalizedSource := make(map[string]bool)
+	for _, line := range sourceLines {
+		line = normalizeLine(line)
+		if line != "" {
+			normalizedSource[line] = true
+		}
+	}
+
+	// Ensure every line in target exists in source
+	for _, line := range targetLines {
+		line = normalizeLine(line)
+		if line == "" {
+			continue
+		}
+		if !normalizedSource[line] {
+			return false
+		}
+	}
+
+	return true
 }
