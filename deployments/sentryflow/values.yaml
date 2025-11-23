@@ -8,7 +8,7 @@ image:
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: v0.1.2
+  tag: v0.1.4
 # Arguments to pass SentryFlow container
 args:
   - --config
@@ -45,15 +45,17 @@ securityContext:
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-  type: ClusterIP
+  type: NodePort
   ports:
     - name: exporter
       port: 8080 # Make sure to use the same port as `.exporter.grpc.port` field of `config`
       targetPort: 8080 # Make sure to use the same port as `.filters.server.port` field of `config`
+      nodePort: 30880
       protocol: TCP
     - name: receiver
       port: 8081 # Make sure to use the same port as `.filters.server.port` field of `config`
       targetPort: 8081 # Make sure to use the same port as `.filters.server.port` field of `config`
+      nodePort: 30001
       protocol: TCP
 resources:
   limits:
