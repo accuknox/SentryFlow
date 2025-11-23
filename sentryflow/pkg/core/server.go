@@ -73,7 +73,7 @@ func (m *Manager) eventsHandler(writer http.ResponseWriter, request *http.Reques
 
 	apiEvent := &protobuf.APIEvent{}
 	if err := protojson.Unmarshal(body, apiEvent); err != nil {
-		m.Logger.Info("failed to unmarshal api event, error:", err)
+		m.Logger.Infof("failed to unmarshal api event, error: %v, \nRequest Body: %s", err, string(body))
 		http.Error(writer, "failed to unmarshal request body", http.StatusBadRequest)
 		return
 	}
