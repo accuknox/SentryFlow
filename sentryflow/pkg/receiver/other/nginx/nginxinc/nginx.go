@@ -105,11 +105,9 @@ func validateIngressDeployAndConfigMap(ctx context.Context, cfg *config.Config, 
 	if !exists {
 		return fmt.Errorf("sentryflow http-snippets not found in nginx-incorporation ingress configmap")
 	}
-	expectedHttpSnippets := `
-        js_path "/etc/nginx/njs/";
-        subrequest_output_buffer_size 32k;
-        js_import main from sentryflow.js;
-    `
+	expectedHttpSnippets := []string{`js_path "/etc/nginx/njs/"`,
+		`subrequest_output_buffer_size 32k`,
+		`js_import main from sentryflow.js`}
 	if !SnippetsExist(httpSnippets, expectedHttpSnippets) {
 		return fmt.Errorf("sentryflow http-snippets were not properly configured in nginx-incorporation ingress configmap")
 	}
@@ -118,7 +116,9 @@ func validateIngressDeployAndConfigMap(ctx context.Context, cfg *config.Config, 
 	if !exists {
 		return fmt.Errorf("sentryflow location-snippets not found in nginx-incorporation ingress configmap")
 	}
-	expectedLocationSnippets := `js_body_filter main.requestHandler buffer_type=buffer;`
+	expectedLocationSnippets := []string{
+		`js_set $body_text main.captureRequestBody`,
+		`js_body_filter main.responseHandler buffer_type=buffer`}
 	if !SnippetsExist(locationSnippets, expectedLocationSnippets) {
 		return fmt.Errorf("sentryflow location-snippets were not properly configured in nginx-incorporation ingress configmap")
 	}
@@ -127,13 +127,13 @@ func validateIngressDeployAndConfigMap(ctx context.Context, cfg *config.Config, 
 	if !exists {
 		return fmt.Errorf("sentryflow server-snippets not found in nginx-incorporation ingress configmap")
 	}
-	expectedServerSnippets := `location /sentryflow {
-  internal;
-  proxy_method      POST;
-  proxy_set_header accept "application/json";
-  proxy_set_header Content-Type "application/json";
-}
-` // The server snippet might have different SentryFlow URL in `proxy_pass`
+	expectedServerSnippets := []string{
+		`location /sentryflow`,
+		`proxy_method      POST`,
+		`proxy_set_header accept "application/json"`,
+		`proxy_set_header Content-Type "application/json"`,
+	}
+	// The server snippet might have different SentryFlow URL in `proxy_pass`
 	// directive. To avoid potential conflicts, check without that directive.
 	if !SnippetsExist(serverSnippets, expectedServerSnippets) {
 		return fmt.Errorf("sentryflow server-snippets were not properly configured in nginx-incorporation ingress configmap")
@@ -152,34 +152,19 @@ func getIngressControllerDeploymentNamespace(cfg *config.Config) string {
 }
 
 // Checks if the exact snippet block exists in the recieved snippets key
-func SnippetsExist(recievedSnippets string, expectedSnippets string) bool {
-	// Split into lines and normalize
-	normalizeLine := func(s string) string {
-		return strings.TrimSpace(s)
-	}
+func SnippetsExist(recievedSnippets string, expectedSnippets []string) bool {
 
-	sourceLines := strings.Split(recievedSnippets, "\n")
-	targetLines := strings.Split(expectedSnippets, "\n")
-
-	// Build a set of all lines in source
-	normalizedSource := make(map[string]bool)
-	for _, line := range sourceLines {
-		line = normalizeLine(line)
-		if line != "" {
-			normalizedSource[line] = true
-		}
-	}
+	sourceLines := strings.Split(recievedSnippets, ";")
 
 	// Ensure every line in target exists in source
-	for _, line := range targetLines {
-		line = normalizeLine(line)
-		if line == "" {
-			continue
-		}
-		if !normalizedSource[line] {
-			return false
+	matchedCount := len(expectedSnippets)
+	for _, line := range expectedSnippets {
+		for _, sourceLine := range sourceLines {
+			if strings.Contains(sourceLine, line) {
+				matchedCount--
+				break
+			}
 		}
 	}
-
-	return true
+	return matchedCount == 0
 }
