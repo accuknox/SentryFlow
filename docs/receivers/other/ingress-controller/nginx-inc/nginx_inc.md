@@ -29,96 +29,170 @@ cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: sentryflow-nginx-inc
-  namespace: <ingress-controller-namespace>
+  name: sentryflow-nginx-inc # Do not change this
+  namespace: default
 data:
   sentryflow.js: |
-    const DEFAULT_KEY = "sentryFlow";
-    const ResStatusKey = ":status"
     const MAX_BODY_SIZE = 1_000_000; // 1 MB
-    
-    function requestHandler(r, data, flags) {
-        r.sendBuffer(data, flags);
-        r.done();
-        
-        let responseBody = ""
+
+    function getVar(r, name) {
         try {
-            responseBody = new TextDecoder("utf-8")
-                .decode(new Uint8Array(data));
-        } catch (error) {
-            r.error(`failed to decode data, error: ${error}`)
+            const v = r.variables[name];
+            return (v === undefined || v === null) ? "" : v;
+        } catch (err) {
+            r.error(`getVar failed for ${name}: ${err}`);
+            return "";
         }
-        
-        if (responseBody.length > MAX_BODY_SIZE) {
-            responseBody = ""
+    }
+
+    function getIntSafely(r, name) {
+        try {
+            const v = r.variables[name];
+            return (v === undefined || v === null) ? 0 : v;
+        } catch (err) {
+            r.error(`getIntSafely failed for ${name}: ${err}`);
+            return 0;
         }
-        
-        let apiEvent = {
-            "metadata": {
-                "timestamp": Date.parse(r.variables.time_iso8601.split("+")[0]) / 1000,
-                "receiver_name": "nginx",
-                "receiver_version": ngx.version,
-            },
-            "source": {
-                "ip": r.remoteAddress,
-                "port": r.variables.remote_port,
-            },
-            "destination": {
-                "ip": r.variables.server_addr,
-                "port": r.variables.server_port,
-            },
-            "request": {
-                "headers": {},
-                "body": r.requestText || "",
-            },
-            "response": {
-                "headers": {},
-                "body": responseBody,
-            },
-            "protocol": r.variables.server_protocol,
-        };
-        
-        for (const header in r.headersIn) {
-            apiEvent.request.headers[header] = r.headersIn[header];
-        }
-        
-        apiEvent.request.headers[":scheme"] = r.variables.scheme
-        apiEvent.request.headers[":path"] = r.uri
-        apiEvent.request.headers[":method"] = r.variables.request_method
-        
-        apiEvent.request.headers["body_bytes_sent"] = r.variables.body_bytes_sent
-        
-        apiEvent.request.headers["request_length"] = r.variables.request_length
-        
-        apiEvent.request.headers["request_time"] = r.variables.request_time
-        
-        apiEvent.request.headers["query"] = r.variables.query_string
-        
-        for (const header in r.headersOut) {
-            apiEvent.response.headers[header] = r.headersOut[header];
-        }
-        apiEvent.response.headers[ResStatusKey] = r.variables.status
-        
-        ngx.shared.apievents.set(DEFAULT_KEY, JSON.stringify(apiEvent));
     }
     
-    async function dispatchHttpCall(r) {
+    function safeGet(value) {
+        return (value === undefined || value === null) ? "" : value;
+    }
+
+    function captureRequestBody(r) {
         try {
-            let apiEvent = ngx.shared.apievents.get(DEFAULT_KEY);
-            await r.subrequest("/sentryflow", {
-                method: "POST", body: apiEvent, detached: true
-            })
-        } catch (error) {
-            r.error(`failed to dispatch HTTP call to SentryFlow, error: ${error}`)
-            return;
-        } finally {
-            ngx.shared.apievents.clear();
+            let body = r.variables.request_body || "";
+            if (body.length > MAX_BODY_SIZE) {
+                r.log(`REQUEST BODY OVER 1 MB LIMIT, truncating`);
+                body = body.slice(0, MAX_BODY_SIZE);
+            }
+            return body;
+        } catch (err) {
+            r.error(`Failed to get request body: ${err}`);
+            return "";
         }
-        
-        r.return(200, "OK");
     }
     
-    export default {requestHandler, dispatchHttpCall};
+
+    function responseHandler(r, data, flags) {
+        try {
+            
+            r.sendBuffer(data, flags);
+
+            if (!r._respInit) {
+                r._respChunks = [];
+                r._respBytes = 0;
+                r._tooLarge = false;
+                r._respInit = true;
+
+            }
+        
+            if (data && !r._tooLarge) {
+                const newSize = r._respBytes + data.length;
+                
+
+                if (newSize > MAX_BODY_SIZE) {
+                    r.log(`RESPONSE BODY OVER 1 MB LIMIT, NOT CAPTURING RESPONSE BODY`);
+                    r._tooLarge = true;
+                    r._respChunks = null;
+                    r._respBytes = 0;
+                } else {
+                    r._respChunks.push(data);
+                    r._respBytes = newSize;
+                }
+            }
+            
+            if (!flags.last) return;
+
+            let responseBody = ""
+            
+            if (r._respBytes > 0) {
+                try {
+                    const merged = Buffer.concat(r._respChunks);
+                    responseBody = new TextDecoder("utf-8").decode(merged);
+                } catch (err) {
+                    r.error(`Failed to decode response body: ${err}`);
+                    responseBody = "";
+                }
+            }
+
+            // Safety check: final string shouldn't exceed max
+            //
+            if (responseBody.length > MAX_BODY_SIZE) {
+                r.log(`FINAL STRING TOO LARGE: length=${responseBody.length} → cleared`);
+                responseBody = "";
+            }
+
+            r._respChunks = null;
+            r._respBytes = 0;
+
+            let apiEvent = {
+                "metadata": {
+                    "timestamp": Date.parse(r.variables.time_iso8601.split("+")[0]) / 1000,
+                    "receiver_name": "nginx",
+                    "receiver_version": ngx.version,
+                },
+                "source": {
+                    "ip": safeGet(r.remoteAddress),
+                    "port": getIntSafely(r, "remote_port"),
+                },
+                "destination": {
+                    "ip": getVar(r, "server_addr"),
+                    "port": getIntSafely(r, "server_port"),
+                },
+                "request": {
+                    "headers": {},
+                    "body": getVar(r, "body_text"),
+                },
+                "response": {
+                    "headers": {},
+                    "body": responseBody,
+                },
+                "protocol": getVar(r, "server_protocol"),
+            };
+
+            const headersIn = r.headersIn || {};
+            for (const header in headersIn) {
+                const value = headersIn[header];
+                apiEvent.request.headers[header] = Array.isArray(value) ? value.join(",") : value;
+            }
+
+            apiEvent.request.headers[":scheme"] = getVar(r, "scheme")
+            apiEvent.request.headers[":path"] = safeGet(r.uri)
+            apiEvent.request.headers[":method"] = getVar(r, "request_method")
+
+            apiEvent.request.headers["body_bytes_sent"] = getVar(r, "body_bytes_sent")
+            apiEvent.request.headers["request_length"] = getVar(r, "request_length")
+            apiEvent.request.headers["request_time"] = getVar(r, "request_time")
+            apiEvent.request.headers["query"] = getVar(r, "query_string")
+            
+            const headersOut = r.headersOut || {};
+            for (const header in headersOut) {
+                const value = headersOut[header];
+                apiEvent.response.headers[header] = Array.isArray(value) ? value.join(",") : value;
+            }
+        
+            apiEvent.response.headers[":status"] = getVar(r, "status")
+
+            r.subrequest("/sentryflow", {
+                method: "POST",
+                body: JSON.stringify(apiEvent),
+                detached: true,
+            });
+        } catch (err) {
+            r.error(`responseHandler failed: ${err}`);
+            // send minimal event for failure
+            if (flags.last) {
+                r.subrequest("/sentryflow", {
+                    method: "POST",
+                    body: JSON.stringify({ error: err.toString() }),
+                    detached: true,
+                });
+            }
+        }
+    }
+
+    export default {responseHandler, captureRequestBody};
 EOF
 ```
 
@@ -145,18 +219,12 @@ volumeMounts:
 data:
   http-snippets: |
     js_path "/etc/nginx/njs/";
-    subrequest_output_buffer_size 8k;
-    js_shared_dict_zone zone=apievents:1M timeout=300s evict;
+    subrequest_output_buffer_size 32k;
     js_import main from sentryflow.js;
   location-snippets: |
-    js_body_filter main.requestHandler buffer_type=buffer;
-    mirror      /mirror_request;
-    mirror_request_body on;
+    js_body_filter main.responseHandler buffer_type=buffer;
+    js_set $body_text main.captureRequestBody;
   server-snippets: |
-    location /mirror_request {
-      internal;
-      js_content main.dispatchHttpCall;
-    }
     location /sentryflow {
       internal;
       # Update SentryFlow URL with path to ingest access logs if required.
@@ -167,36 +235,50 @@ data:
     }
 ```
 
-4. Download SentryFlow manifest file
+4. Install Sentryflow
+
+Update the nginx deployment name, config map name, and namespace name before running the command. 
 
   ```shell
-  curl -sO https://raw.githubusercontent.com/accuknox/SentryFlow/refs/heads/main/deployments/sentryflow.yaml
+  helm upgrade --install sentryflow \
+  oci://public.ecr.aws/k9v9d5v2/sentryflow-helm-charts \
+  --version v0.1.4 \
+  --namespace sentryflow \
+  --create-namespace \
+  --set config.receivers.nginxIngressController.enabled=true \
+  --set config.receivers.nginxIngressController.deploymentName=<nginx deployment name> \
+  --set config.receivers.nginxIngressController.configMapName=<nginx config map name> \
+  --set config.receivers.nginxIngressController.namespace=<namespace where ingress controller is deployed> 
   ```
 
-5. Update the `.receivers` configuration in `sentryflow` [configmap](../../../../../deployments/sentryflow.yaml) as
-   follows:
+5. Modify discovery engine config map and restart the discovery engine deployment
 
   ```yaml
-  filters:
-    server:
-      port: 8081
-    # Following is required for `nginx-inc-ingress-controller` receiver.  
-    nginxIngress:
-      deploymentName: <nginx-ingress-controller-deploy-name>
-      configMapName: <nginx-ingress-configmap-name>
-      sentryFlowNjsConfigMapName: <sentryflow-nginx-inc-configmap-name>
-
-  receivers:
-    others:
-      - name: nginx-inc-ingress-controller # SentryFlow makes use of `name` to configure receivers. DON'T CHANGE IT.
-        namespace: <ingress-controller-namespace> # Kubernetes namespace in which you've deployed the ingress controller.
-    ...
-  ```
-
-6. Deploy SentryFlow
-
-  ```shell
-  kubectl apply -f sentryflow.yaml
+  data:
+    app.yaml: |
+      ...
+      summary-engine:
+        sentryflow:
+          cron-interval: 0h0m30s
+          decode-jwt: true
+          enabled: true
+          include-bodies: true
+          redact-sensitive-data: false
+          sensitive-rules-files-path:
+          - /var/lib/sumengine/sensitive-data-rules.yaml
+          threshold: 10000
+      watcher:
+      ...
+        sentryflow:
+          enabled: true
+          event-type:
+            access-log: true
+            metric: false
+          service:
+            enabled: true
+            name: sentryflow
+            port: "8080"
+            url: "sentryflow.sentryflow"
   ```
 
 7. Trigger API calls to generate traffic.
