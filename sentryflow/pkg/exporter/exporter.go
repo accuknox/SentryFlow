@@ -7,15 +7,14 @@ import (
 	"context"
 	"sync"
 
+	protobuf "github.com/accuknox/SentryFlow/protobuf/golang"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/config"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
-
-	protobuf "github.com/accuknox/SentryFlow/protobuf/golang"
-	"github.com/accuknox/SentryFlow/sentryflow/pkg/config"
-	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
 )
 
 // clientList represents a list of gRPC clients and their associated channels for
@@ -68,7 +67,7 @@ func (e *exporter) GetAPIEvent(clientInfo *protobuf.ClientInfo, stream grpc.Serv
 
 func (e *exporter) addClientToList(uid string) chan *protobuf.APIEvent {
 	e.clients.Lock()
-	connChan := make(chan *protobuf.APIEvent)
+	connChan := make(chan *protobuf.APIEvent, 1000)
 	e.clients.client[uid] = connChan
 	e.clients.Unlock()
 	return connChan
@@ -113,7 +112,9 @@ func (e *exporter) putApiEventOnClientsChannel(ctx context.Context) {
 				select {
 				case clientChan <- eventToSend:
 				default:
-					e.logger.Warnf("event dropped for %v client", uid)
+					<-clientChan // Drop oldest event
+					e.logger.Warnf("Client %s channel full, dropping oldest event", uid)
+					clientChan <- eventToSend // ADD NEWEST
 				}
 			}
 			e.clients.Unlock()
