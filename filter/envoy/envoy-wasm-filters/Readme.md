@@ -82,28 +82,24 @@ This example can be run with docker compose and has a matching [envoy configurat
 # In Kubernetes
 
 - [Install Istio](https://istio.io/latest/docs/setup/install/)
-- Build the plugin
-  ```shell
-  make
-  ```
-
-- Build and push plugin's container image
-  ```shell
-  make imagex push
-  ```
-
-- Update the value of `filters.envoy.uri` with the latest image in
-  SentryFlow's [configMap](https://github.com/accuknox/SentryFlow/blob/main/deployments/sentryflow.yaml#L68)
-
-- Deploy SentryFlow
-  ```shell
-  kubectl apply -f https://raw.githubusercontent.com/accuknox/SentryFlow/refs/heads/main/deployments/sentryflow.yaml
-  ```
 
 - Enable the envoy proxy injection by labeling the namespace in which you'll deploy workload:
   ```shell
   kubectl label ns <namespace_name> istio-injection=enabled
   ```
+
+- Deploy SentryFlow
+
+  ```shell
+  helm upgrade --install sentryflow \
+  oci://public.ecr.aws/k9v9d5v2/sentryflow-helm-charts \
+  --version v0.1.5 \
+  --namespace sentryflow \
+  --create-namespace \
+  --set config.receivers.istio.enabled=true \
+  --set config.receivers.istio.namespace=<namespace where istio is installed> 
+  ```
+
 - Deploy some workload and generate traffic by calling some APIs. For e.g., you can use
   Google's [microservices-demo](https://github.com/GoogleCloudPlatform/microservices-demo).
 
