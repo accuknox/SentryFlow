@@ -34,22 +34,25 @@ clean: ## Remove generated stuff
 
 .PHONY: image-sidecar
 image-sidecar: build-sidecar ## Build sidecar container image
-	$(CONTAINER_TOOL) build --build-arg PLUGIN_TYPE=sidecar -t ${DOCKER_IMAGE}:v0.4-sidecar .
+	$(CONTAINER_TOOL) build --build-arg PLUGIN_TYPE=sidecar -t ${DOCKER_IMAGE}:${DOCKER_TAG}-sidecar .
 
 .PHONY: image-gateway
 image-gateway: build-gateway ## Build gateway container image
-	$(CONTAINER_TOOL) build --build-arg PLUGIN_TYPE=gateway -t ${DOCKER_IMAGE}:v0.4-gateway .
+	$(CONTAINER_TOOL) build --build-arg PLUGIN_TYPE=gateway -t ${DOCKER_IMAGE}:${DOCKER_TAG}-gateway .
 
 .PHONY: push-sidecar
 push-sidecar: ## Push sidecar container image
-	$(CONTAINER_TOOL) push ${DOCKER_IMAGE}:v0.4-sidecar
+	$(CONTAINER_TOOL) push ${DOCKER_IMAGE}:${DOCKER_TAG}-sidecar
 
 .PHONY: push-gateway
 push-gateway: ## Push gateway container image
-	$(CONTAINER_TOOL) push ${DOCKER_IMAGE}:v0.4-gateway
+	$(CONTAINER_TOOL) push ${DOCKER_IMAGE}:${DOCKER_TAG}-gateway
 
 .PHONY: all
 all: image-sidecar image-gateway ## Build both sidecar and gateway images
+
+.PHONY: image
+all: image-sidecar ## By default we make image for sidecar 
 
 .PHONY: push-all
 push-all: push-sidecar push-gateway ## Push both images

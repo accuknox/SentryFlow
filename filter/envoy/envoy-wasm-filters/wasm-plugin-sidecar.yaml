@@ -16,4 +16,4 @@ spec:
     upstream_name: sentryflow
   pluginName: http-filter
   type: HTTP
-  url: public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:v0.4-sidecar
+  url: public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:latest-sidecar
