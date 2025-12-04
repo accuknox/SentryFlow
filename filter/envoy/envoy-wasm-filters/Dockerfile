@@ -22,4 +22,4 @@ RUN if [ "${PLUGIN_TYPE}" = "gateway" ]; then \
 
 FROM scratch
 
-COPY --from=builder /envoy-plugin/target/wasm32-wasip1/release/httpfilter.wasm ./plugin.wasm
+COPY --from=builder /envoy-plugin/target/wasm32-wasip1/release/httpfilters.wasm ./plugin.wasm

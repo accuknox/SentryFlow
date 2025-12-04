@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 Authors of SentryFlow
 
-REGISTRY ?= public.ecr.aws/k9v9d5v2 
+REGISTRY ?= public.ecr.aws/k9v9d5v2
 DOCKER_IMAGE ?= $(REGISTRY)/sentryflow-httpfilter
 DOCKER_TAG ?= latest
 CONTAINER_TOOL ?= docker
