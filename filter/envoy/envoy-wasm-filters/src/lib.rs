@@ -1,4 +1,4 @@
-use log::error;
+use log::{debug, error, info};
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, ContextType, LogLevel};
 use serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ struct Plugin {
     api_event: APIEvent,
 }
 
-#[derive(Deserialize, Clone, Default)]
+#[derive(Deserialize, Clone, Default, Debug)]
 struct PluginConfig {
     upstream_name: String,
     api_path: String,
@@ -24,8 +24,8 @@ struct PluginConfig {
 #[derive(Serialize, Default, Clone)]
 struct APIEvent {
     metadata: Metadata,
-    request: Reqquest,
-    response: Ressponse,
+    request: Request,
+    response: Response,
     source: Workload,
     destination: Workload,
     protocol: String,
@@ -48,13 +48,13 @@ struct Workload {
 }
 
 #[derive(Serialize, Clone, Default)]
-struct Reqquest {
+struct Request {
     headers: HashMap<String, String>,
     body: String,
 }
 
 #[derive(Serialize, Clone, Default, Debug)]
-struct Ressponse {
+struct Response {
     headers: HashMap<String, String>,
     body: String,
     backend_latency_in_nanos: u64,
@@ -71,6 +71,10 @@ fn _start() {
 
 impl Context for Plugin {
     fn on_done(&mut self) -> bool {
+        info!(
+            "Context {} finished, dispatching telemetry",
+            self._context_id
+        );
         dispatch_http_call_to_upstream(self);
         true
     }
@@ -91,6 +95,7 @@ impl RootContext for Plugin {
     }
 
     fn create_http_context(&self, _context_id: u32) -> Option<Box<dyn HttpContext>> {
+        debug!("Creating HTTP context {}", _context_id);
         Some(Box::new(Plugin {
             _context_id,
             config: self.config.clone(),
@@ -105,12 +110,25 @@ impl RootContext for Plugin {
 
 impl HttpContext for Plugin {
     fn on_http_request_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
+        info!(
+            "Source address: {}",
+            String::from_utf8(
+                self.get_property(vec!["source", "address"])
+                    .unwrap_or_default()
+            )
+            .unwrap_or_default()
+        );
         let (mut src_ip, src_port) = get_url_and_port(
             String::from_utf8(
                 self.get_property(vec!["source", "address"])
                     .unwrap_or_default(),
             )
             .unwrap_or_default(),
+        );
+
+        debug!(
+            "Processing request headers for context {}: src={}:{}",
+            self._context_id, src_ip, src_port
         );
 
         let req_headers = self.get_http_request_headers();
@@ -184,7 +202,13 @@ impl HttpContext for Plugin {
         .unwrap_or_default();
 
         if !body.is_empty() && body.len() <= MAX_BODY_SIZE {
+            debug!("Request body captured: {} bytes", body.len());
             self.api_event.request.body = body;
+        } else if body.len() > MAX_BODY_SIZE {
+            info!(
+                "Request body too large ({} bytes), skipping capture",
+                body.len()
+            );
         }
         Action::Continue
     }
@@ -215,6 +239,11 @@ impl HttpContext for Plugin {
             );
         }
 
+        debug!(
+            "Processing response headers: dest={}:{}",
+            dest_ip, dest_port
+        );
+
         let res_headers = self.get_http_response_headers();
         let mut headers: HashMap<String, String> = HashMap::with_capacity(res_headers.len());
         for res_header in res_headers {
@@ -244,16 +273,26 @@ impl HttpContext for Plugin {
                 .unwrap_or_default(),
         )
         .unwrap_or_default();
+
         if !body.is_empty() && body.len() <= MAX_BODY_SIZE {
+            debug!("Response body captured: {} bytes", body.len());
             self.api_event.response.body = body;
+        } else if body.len() > MAX_BODY_SIZE {
+            info!(
+                "Response body too large ({} bytes), skipping capture",
+                body.len()
+            );
         }
 
         if let Some(value) = self.get_property(vec!["response", "backend_latency"]) {
             // Ensure the byte vector has at least 8 bytes for u64
             if value.len() >= 8 {
-                // Convert the first 8 bytes to an u64 (nanoseconds)
                 self.api_event.response.backend_latency_in_nanos =
                     u64::from_ne_bytes(value[..8].try_into().unwrap_or_default());
+                debug!(
+                    "Backend latency: {} ns",
+                    self.api_event.response.backend_latency_in_nanos
+                );
             }
         }
 
@@ -263,7 +302,21 @@ impl HttpContext for Plugin {
 
 fn dispatch_http_call_to_upstream(obj: &mut Plugin) {
     update_metadata(obj);
-    let telemetry_json = serde_json::to_string(&obj.api_event).unwrap_or_default();
+    let telemetry_json = match serde_json::to_string(&obj.api_event) {
+        Ok(json) => json,
+        Err(e) => {
+            error!("Failed to serialize telemetry: {:?}", e);
+            return;
+        }
+    };
+
+    info!(
+        "Dispatching telemetry to upstream '{}' at '{}{}' ({} bytes)",
+        &obj.config.upstream_name,
+        &obj.config.authority,
+        &obj.config.api_path,
+        telemetry_json.len()
+    );
 
     let headers = vec![
         (":method", "POST"),
@@ -286,6 +339,8 @@ fn dispatch_http_call_to_upstream(obj: &mut Plugin) {
             "Failed to dispatch HTTP call, to '{}' status: {http_call_res:#?}",
             &obj.config.upstream_name,
         );
+    } else {
+        debug!("HTTP call dispatched successfully");
     }
 }
 
@@ -307,24 +362,35 @@ fn update_metadata(obj: &mut Plugin) {
     )
     .unwrap_or_default();
 
-    if !istio_version.is_empty() {
-        obj.api_event.metadata.receiver_version = istio_version;
-        obj.api_event.metadata.receiver_name = "Istio".to_string();
-    }
+    // Conditional compilation based on feature flag
+    #[cfg(feature = "gateway")]
+    let proxy_type = "Gateway";
+
+    #[cfg(feature = "sidecar")]
+    let proxy_type = "Sidecar";
+
+    obj.api_event.metadata.receiver_name = format!("Istio-{}", proxy_type);
+    obj.api_event.metadata.receiver_version = istio_version;
+
+    info!(
+        "Metadata - type: {}, receiver: {}",
+        proxy_type, obj.api_event.metadata.receiver_name,
+    );
 }
 
 fn get_url_and_port(address: String) -> (String, u16) {
-    let parts: Vec<&str> = address.split(':').collect();
-
-    let mut url = "".to_string();
-    let mut port = 0;
-
-    if parts.len() == 2 {
-        url = parts[0].parse().unwrap();
-        port = parts[1].parse().unwrap();
-    } else {
-        error!("Invalid address");
+    if address.is_empty() {
+        return (String::new(), 0);
     }
 
-    (url, port)
+    let parts: Vec<&str> = address.split(':').collect();
+
+    if parts.len() == 2 {
+        let url = parts[0].to_string();
+        let port = parts[1].parse::<u16>().unwrap_or(0);
+        (url, port)
+    } else {
+        error!("Invalid address format: '{}'", address);
+        (String::new(), 0)
+    }
 }
