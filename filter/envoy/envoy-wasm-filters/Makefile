@@ -33,11 +33,11 @@ clean: ## Remove generated stuff
 	@cargo clean
 
 .PHONY: image-sidecar
-image-sidecar: build-sidecar ## Build sidecar container image
+image-sidecar:
 	$(CONTAINER_TOOL) build --build-arg PLUGIN_TYPE=sidecar -t ${DOCKER_IMAGE}:${DOCKER_TAG}-sidecar .
 
 .PHONY: image-gateway
-image-gateway: build-gateway ## Build gateway container image
+image-gateway: 
 	$(CONTAINER_TOOL) build --build-arg PLUGIN_TYPE=gateway -t ${DOCKER_IMAGE}:${DOCKER_TAG}-gateway .
 
 .PHONY: push-sidecar
