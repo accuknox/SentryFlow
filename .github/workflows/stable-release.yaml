@@ -4,9 +4,9 @@
 name: Stable release
 
 on:
-  # create:
-  #   tags:
-  #     - "v*"
+  create:
+    tags:
+      - "v*"
   pull_request:
     types: [ opened, reopened, synchronize, ready_for_review ]
     paths-ignore:
@@ -75,7 +75,7 @@ jobs:
 
   update-image-tags-in-helm-charts:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
-    needs: [ release-sentryflow-image, release-envoy-filter-image ]
+    needs: [ release-sentryflow-image, release-envoy-filter-sidecar-image, release-envoy-filter-gateway-image ]
     permissions:
       pull-requests: write
       contents: write
