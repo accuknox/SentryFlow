@@ -1,0 +1,89 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024 Authors of SentryFlow
+
+name: Build and push Docker image (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      DOCKER_CONTEXT:
+        required: true
+        type: string
+        description: 'Docker build context path'
+      DOCKERFILE:
+        required: true
+        type: string
+        description: 'Path to Dockerfile'
+      IMAGE_NAME:
+        required: true
+        type: string
+        description: 'Image name (without registry/tag)'
+      IMAGE_TAG:
+        required: false
+        type: string
+        description: 'Image tag (optional, defaults to latest or git tag)'
+        default: ''
+      DOCKER_BUILD_ARGS:
+        required: false
+        type: string
+        description: 'Docker build arguments (e.g., PLUGIN_TYPE=sidecar)'
+        default: ''
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      GIT_KEY:
+        required: false
+
+jobs:
+  push_to_registry:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        
+      - name: Set up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to AWS ECR
+        run: |
+          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/k9v9d5v2
+    
+      - name: Determine version
+        id: vars
+        run: |
+          if [ "${{ inputs.IMAGE_TAG }}" != "" ]; then
+            # Use provided IMAGE_TAG
+            echo "tag=${{ inputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For PRs, use pr-{number}
+            echo "tag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            # For main branch, use latest
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            # For tags, use the tag name
+            echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set git ssh private key (if provided)
+        if: ${{ secrets.GIT_KEY != '' }}
+        run: echo "${{ secrets.GIT_KEY }}" > GIT-KEY
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.DOCKER_CONTEXT }}
+          file: ${{ inputs.DOCKERFILE }}
+          push: true
+          tags: public.ecr.aws/k9v9d5v2/${{ inputs.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
+          build-args: ${{ inputs.DOCKER_BUILD_ARGS }}

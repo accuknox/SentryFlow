@@ -57,7 +57,7 @@ jobs:
     needs: [ files-changed ]
     if: ${{ github.repository == 'accuknox/sentryflow' && (github.event_name == 'create' || needs.files-changed.outputs.envoyfilter == 'true') }}
     name: Build and push envoy sidecar filter image
-    uses: ./.github/actions/wasm-push-image/action.yaml@sentryflow-docker-push
+    uses: ./.github/workflows/push-wasm-image.yaml
     with:
       DOCKER_CONTEXT: filter/envoy/envoy-wasm-filters
       DOCKERFILE: filter/envoy/envoy-wasm-filters/Dockerfile
@@ -72,7 +72,7 @@ jobs:
     needs: [ files-changed ]
     if: ${{ github.repository == 'accuknox/sentryflow' && (github.event_name == 'create' || needs.files-changed.outputs.envoyfilter == 'true') }}
     name: Build and push envoy gateway filter image
-    uses: ./.github/actions/wasm-push-image/action.yam@sentryflow-docker-pushl
+    uses: ./.github/workflows/push-wasm-image.yaml 
     with:
       DOCKER_CONTEXT: filter/envoy/envoy-wasm-filters
       DOCKERFILE: filter/envoy/envoy-wasm-filters/Dockerfile
