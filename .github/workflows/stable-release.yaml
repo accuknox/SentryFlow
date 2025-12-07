@@ -21,6 +21,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # release-sentryflow-image:
+  #   if: ${{ github.repository == 'accuknox/sentryflow' }}
+  #   name: Build and push sentryflow image
+  #   uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
+  #   with:
+  #     DOCKER_CONTEXT: .
+  #     DOCKERFILE: ./sentryflow/Dockerfile
+  #     IMAGE_NAME: sentryflow
+  #   secrets:
+  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+
   files-changed:
     name: Find out which files were changed
     runs-on: ubuntu-latest
@@ -38,20 +50,6 @@ jobs:
               - 'sentryflow/**'
             envoyfilter:
               - 'filter/envoy/envoy-wasm-filters/**'
-
-  release-sentryflow-image:
-    needs: [ files-changed ]
-    if: ${{ github.repository == 'accuknox/sentryflow' && (github.event_name == 'create' || needs.files-changed.outputs.sentryflow == 'true') }}
-    name: Build and push sentryflow image
-    uses: ./.github/workflows/build-push-image.yaml
-    with:
-      DOCKER_CONTEXT: .
-      DOCKERFILE: ./sentryflow/Dockerfile
-      IMAGE_NAME: sentryflow
-      IMAGE_TAG: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
 
   release-envoy-filter-sidecar-image:
     needs: [ files-changed ]
