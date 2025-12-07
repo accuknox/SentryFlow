@@ -64,8 +64,8 @@ jobs:
       DOCKER_BUILD_ARGS: "PLUGIN_TYPE=sidecar"
       IMAGE_TAG: "latest-sidecar"              #    secrets:
     secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+      AWS_DEV_ACCESS_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+      AWS_DEV_SECRET_ID: ${{ secrets.AWS_DEV_SECRET_ID }}
 
   release-envoy-filter-gateway-image:
     needs: [ files-changed ]
@@ -80,8 +80,8 @@ jobs:
       DOCKER_BUILD_ARGS: "PLUGIN_TYPE=gateway"
       IMAGE_TAG: "latest-gateway"              #    secrets:
     secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+      AWS_DEV_ACCESS_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+      AWS_DEV_SECRET_ID: ${{ secrets.AWS_DEV_SECRET_ID }}
 
   # update-image-tags-in-helm-charts:
   #   if: ${{ github.repository == 'accuknox/sentryflow' && github.event_name == 'create' }}
