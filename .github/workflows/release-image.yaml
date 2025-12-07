@@ -26,6 +26,16 @@ on:
         required: false
         type: string
         default: 'public'
+      DOCKER_BUILD_ARGS:             
+        description: 'Additional arguments passed to docker build'
+        required: false
+        type: string
+        default: ''
+      IMAGE_TAG: 
+        description: 'Explicit image tag (optional override)'
+        required: false
+        type: string
+        default: ''
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
@@ -65,6 +75,7 @@ jobs:
           repository_name: ${{ inputs.ECR_REPOSITORY }}
           tag: ${{ steps.tag.outputs.tag }}
           registry_type: ${{ inputs.REGISTRY_TYPE }}
+          docker_build_args: ${{ inputs.DOCKER_BUILD_ARGS }}   
           disable_scan: true
           severity: "CRITICAL"
           exit_code: "0"

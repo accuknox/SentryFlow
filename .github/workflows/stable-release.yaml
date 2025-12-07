@@ -55,13 +55,14 @@ jobs:
     needs: [ files-changed ]
     if: ${{ github.repository == 'accuknox/sentryflow' && (github.event_name == 'create' || needs.files-changed.outputs.envoyfilter == 'true') }}
     name: Build and push envoy sidecar filter image
-    uses: ./.github/workflows/push-wasm-image.yaml
+    uses: ./.github/workflows/release-image.yaml 
     with:
-      DOCKER_CONTEXT: filter/envoy/envoy-wasm-filters
-      DOCKERFILE: filter/envoy/envoy-wasm-filters/Dockerfile
-      IMAGE_NAME: sentryflow-httpfilter
-      IMAGE_TAG: 'latest-sidecar'
-      DOCKER_BUILD_ARGS: PLUGIN_TYPE=sidecar
+      WORKING_DIRECTORY: ./filter/envoy/envoy-wasm-filters
+      NAME: sentryflow-httpfilter
+      ECR_REPOSITORY: public.ecr.aws/k9v9d5v2
+      REGISTRY_TYPE: public
+      DOCKER_BUILD_ARGS: "PLUGIN_TYPE=sidecar"
+      IMAGE_TAG: "latest-sidecar"              #    secrets:
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
@@ -70,13 +71,14 @@ jobs:
     needs: [ files-changed ]
     if: ${{ github.repository == 'accuknox/sentryflow' && (github.event_name == 'create' || needs.files-changed.outputs.envoyfilter == 'true') }}
     name: Build and push envoy gateway filter image
-    uses: ./.github/workflows/push-wasm-image.yaml 
+    uses: ./.github/workflows/release-image.yaml 
     with:
-      DOCKER_CONTEXT: filter/envoy/envoy-wasm-filters
-      DOCKERFILE: filter/envoy/envoy-wasm-filters/Dockerfile
-      IMAGE_NAME: sentryflow-httpfilter
-      IMAGE_TAG: 'latest-gateway'
-      DOCKER_BUILD_ARGS: PLUGIN_TYPE=gateway
+      WORKING_DIRECTORY: ./filter/envoy/envoy-wasm-filters
+      NAME: sentryflow-httpfilter
+      ECR_REPOSITORY: public.ecr.aws/k9v9d5v2
+      REGISTRY_TYPE: public
+      DOCKER_BUILD_ARGS: "PLUGIN_TYPE=sidecar"
+      IMAGE_TAG: "latest-sidecar"              #    secrets:
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
