@@ -42,10 +42,10 @@ on:
       AWS_DEV_SECRET_ID:
         required: true
 
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }} 
-  AWS_REGION: us-east-1
+# env:
+#   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+#   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }} 
+#   AWS_REGION: us-east-1
 
 jobs:
   release-image:
@@ -56,11 +56,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}        
+          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}    
+          aws-region: us-east-1
 
       - name: Get tag
         id: tag
