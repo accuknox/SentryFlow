@@ -36,6 +36,11 @@ on:
         required: false
         type: string
         default: ''
+    secrets:                                    # ⬅️ ADD THIS SECTION
+      AWS_DEV_ACCESS_ID:
+        required: true
+      AWS_DEV_SECRET_ID:
+        required: true
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}

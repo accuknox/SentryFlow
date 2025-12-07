@@ -4,12 +4,15 @@
 name: PR checks
 
 on:
-  pull_request:
-    types: [ opened, reopened, synchronize, ready_for_review ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
+  push:
+    branches:
+      - main
+  # pull_request:
+  #   types: [ opened, reopened, synchronize, ready_for_review ]
+  #   paths-ignore:
+  #     - '**.md'
+  #     - 'docs/**'
+  #     - 'LICENSE'
 
 permissions: read-all
 
