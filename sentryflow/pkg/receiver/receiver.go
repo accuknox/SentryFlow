@@ -12,6 +12,7 @@ import (
 
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/config"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/other/nginx/nginxinc"
+	istiogateway "github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/svcmesh/istio/gateway"
 	istiosidecar "github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/svcmesh/istio/sidecar"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
 )
@@ -30,6 +31,12 @@ func Init(ctx context.Context, k8sClient client.Client, cfg *config.Config, wg *
 				go func() {
 					defer wg.Done()
 					istiosidecar.StartMonitoring(ctx, cfg, k8sClient, lock)
+				}()
+			case util.ServiceMeshIstioGateway:
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					istiogateway.StartMonitoring(ctx, cfg, k8sClient, lock)
 				}()
 			default:
 				return fmt.Errorf("unsupported Service Mesh, %v", serviceMesh.Name)

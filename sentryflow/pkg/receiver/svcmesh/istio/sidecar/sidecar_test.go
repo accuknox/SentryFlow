@@ -40,6 +40,7 @@ func Test_createEnvoyFilter(t *testing.T) {
 		// Given
 		envoyFilter := getEnvoyFilter()
 		want, _ := json.Marshal(envoyFilter)
+
 		defer func() {
 			if err := fakeClient.Delete(ctx, envoyFilter); err != nil {
 				t.Errorf("createEnvoyFilter() failed to delete filter = %v", err)
@@ -55,6 +56,7 @@ func Test_createEnvoyFilter(t *testing.T) {
 		latestFilter := &networkingv1alpha3.EnvoyFilter{}
 		_ = fakeClient.Get(ctx, client.ObjectKeyFromObject(envoyFilter), latestFilter)
 		got, _ := json.Marshal(latestFilter)
+
 		if !bytes.Equal(got, want) {
 			t.Errorf("createEnvoyFilter() got = %v, want = %v", string(got), string(want))
 		}
@@ -63,13 +65,13 @@ func Test_createEnvoyFilter(t *testing.T) {
 	t.Run("when filter already exists should not create new one", func(t *testing.T) {
 		// Given
 		envoyFilter := getEnvoyFilter()
-
 		want, _ := json.Marshal(envoyFilter)
 		envoyFilter.ResourceVersion = ""
 
 		if err := fakeClient.Create(ctx, envoyFilter); err != nil {
 			t.Errorf("createEnvoyFilter() failed to create filter = %v", err)
 		}
+
 		defer func() {
 			if err := fakeClient.Delete(ctx, getEnvoyFilter()); err != nil {
 				t.Errorf("createEnvoyFilter() failed to delete filter = %v", err)
@@ -85,6 +87,7 @@ func Test_createEnvoyFilter(t *testing.T) {
 		filter := &networkingv1alpha3.EnvoyFilter{}
 		_ = fakeClient.Get(ctx, client.ObjectKeyFromObject(envoyFilter), filter)
 		got, _ := json.Marshal(filter)
+
 		if !bytes.Equal(got, want) {
 			t.Errorf("createEnvoyFilter() got = %v, want = %v", string(got), string(want))
 		}
@@ -100,6 +103,7 @@ func Test_createWasmPlugin(t *testing.T) {
 		// Given
 		wasmPlugin := getWasmPlugin()
 		want, _ := json.Marshal(wasmPlugin)
+
 		defer func() {
 			if err := fakeClient.Delete(ctx, wasmPlugin); err != nil {
 				t.Errorf("createWasmPlugin() failed to delete plugin = %v", err)
@@ -115,6 +119,7 @@ func Test_createWasmPlugin(t *testing.T) {
 		latestWasmPlugin := &v1alpha1.WasmPlugin{}
 		_ = fakeClient.Get(ctx, client.ObjectKeyFromObject(wasmPlugin), latestWasmPlugin)
 		got, _ := json.Marshal(latestWasmPlugin)
+
 		if !bytes.Equal(got, want) {
 			t.Errorf("createWasmPlugin() got = %v, want = %v", string(got), string(want))
 		}
@@ -123,13 +128,13 @@ func Test_createWasmPlugin(t *testing.T) {
 	t.Run("when wasm plugin already exist should not create new one", func(t *testing.T) {
 		// Given
 		wasmPlugin := getWasmPlugin()
-
 		want, _ := json.Marshal(wasmPlugin)
 		wasmPlugin.ResourceVersion = ""
 
 		if err := fakeClient.Create(ctx, wasmPlugin); err != nil {
 			t.Errorf("createWasmPlugin() failed to create error = %v, wantErr = nil", err)
 		}
+
 		defer func() {
 			if err := fakeClient.Delete(ctx, wasmPlugin); err != nil {
 				t.Errorf("createWasmPlugin() failed to delete plugin = %v", err)
@@ -145,6 +150,7 @@ func Test_createWasmPlugin(t *testing.T) {
 		latestWasmPlugin := &v1alpha1.WasmPlugin{}
 		_ = fakeClient.Get(ctx, client.ObjectKeyFromObject(wasmPlugin), latestWasmPlugin)
 		got, _ := json.Marshal(latestWasmPlugin)
+
 		if !bytes.Equal(got, want) {
 			t.Errorf("createWasmPlugin() got = %v, want = %v", string(got), string(want))
 		}
@@ -159,6 +165,7 @@ func Test_deleteEnvoyFilter(t *testing.T) {
 		// Given
 		envoyFilter := getEnvoyFilter()
 		envoyFilter.ResourceVersion = ""
+
 		if err := fakeClient.Create(ctx, envoyFilter); err != nil {
 			t.Errorf("deleteEnvoyFilter() failed to create filter error = %v, wantErr = nil", err)
 		}
@@ -171,7 +178,7 @@ func Test_deleteEnvoyFilter(t *testing.T) {
 
 	t.Run("when filter doesn't exist should return error", func(t *testing.T) {
 		// Given
-		errMessage := `envoyfilters.networking.istio.io "http-filter" not found`
+		errMessage := `envoyfilters.networking.istio.io "http-filter-sidecar" not found`
 
 		// When
 		err := deleteEnvoyFilter(zap.S(), fakeClient, istioRootNs)
@@ -180,10 +187,10 @@ func Test_deleteEnvoyFilter(t *testing.T) {
 		if err == nil {
 			t.Errorf("deleteEnvoyFilter() error = nil, wantErr = %v", errMessage)
 		}
+
 		if err.Error() != errMessage {
 			t.Errorf("deleteEnvoyFilter() errorMessage = %v, wantErrMessage = %v", err, errMessage)
 		}
-
 	})
 }
 
@@ -195,6 +202,7 @@ func Test_deleteWasmPlugin(t *testing.T) {
 		// Given
 		wasmPlugin := getWasmPlugin()
 		wasmPlugin.ResourceVersion = ""
+
 		if err := fakeClient.Create(ctx, wasmPlugin); err != nil {
 			t.Errorf("deleteWasmPlugin() failed to create wasm plugin error = %v, wantErr = nil", err)
 		}
@@ -207,7 +215,7 @@ func Test_deleteWasmPlugin(t *testing.T) {
 
 	t.Run("when wasm plugin doesn't exist should return error", func(t *testing.T) {
 		// Given
-		errMessage := `wasmplugins.extensions.istio.io "http-filter" not found`
+		errMessage := `wasmplugins.extensions.istio.io "http-filter-sidecar" not found`
 
 		// When
 		err := deleteWasmPlugin(zap.S(), fakeClient, istioRootNs)
@@ -216,10 +224,10 @@ func Test_deleteWasmPlugin(t *testing.T) {
 		if err == nil {
 			t.Errorf("deleteWasmPlugin() error = nil, wantErr = %v", errMessage)
 		}
+
 		if err.Error() != errMessage {
 			t.Errorf("deleteWasmPlugin() errorMessage = %v, wantErrMessage = %v", err, errMessage)
 		}
-
 	})
 }
 
@@ -250,8 +258,7 @@ func getFakeClient() client.WithWatch {
 	utilruntime.Must(networkingv1alpha3.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 
-	return fake.
-		NewClientBuilder().
+	return fake.NewClientBuilder().
 		WithScheme(scheme).
 		Build()
 }
@@ -321,9 +328,11 @@ spec:
 			ResourceVersion: "1",
 		},
 	}
+
 	if err := yaml.UnmarshalStrict(envoyFilter.Bytes(), filter); err != nil {
 		return nil
 	}
+
 	return filter
 }
 
@@ -336,15 +345,15 @@ func getWasmPlugin() *v1alpha1.WasmPlugin {
 			APIVersion: "extensions.istio.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      FilterName,
-			Namespace: istioRootNs,
+			Name:            FilterName,
+			Namespace:       istioRootNs,
+			ResourceVersion: "1",
 			Labels: map[string]string{
 				"app.kubernetes.io/managed-by": "sentryflow",
 			},
-			ResourceVersion: "1",
 		},
 		Spec: extensionsv1alpha1.WasmPlugin{
-			Url: cfg.Filters.Envoy.Uri,
+			Url: fmt.Sprintf("%s:%s", cfg.Filters.Envoy.Uri, cfg.Filters.Envoy.SidecarTag),
 			PluginConfig: &_struct.Struct{
 				Fields: map[string]*_struct.Value{
 					"upstream_name": {

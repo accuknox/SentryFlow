@@ -6,12 +6,17 @@ filters:
     port: 8081
 
   envoy:
-    uri: anuragrajawat/httpfilter:v0.1
+    uri: classikh/sentryflow-httpfilter
+    gatewayTag: "latest-gateway"
+    sidecarTag: "latest-sidecar"
 
 receivers: # aka sources
   serviceMeshes:
+    - name: istio-gateway
+      namespace: istio-system
     - name: istio-sidecar
       namespace: istio-system
+
 exporter:
   grpc:
     port: 8080
