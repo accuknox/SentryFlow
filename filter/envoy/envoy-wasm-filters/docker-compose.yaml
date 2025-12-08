@@ -4,7 +4,7 @@ services:
     hostname: envoy
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-      - ./target/wasm32-unknown-unknown/release:/etc/envoy/proxy-wasm-plugins
+      - ./target/wasm32-wasip1/release:/etc/envoy/proxy-wasm-plugins
     networks:
       - envoymesh
     ports:
@@ -14,3 +14,4 @@ services:
 
 networks:
   envoymesh: { }
+

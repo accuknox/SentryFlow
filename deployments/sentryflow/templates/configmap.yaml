@@ -22,7 +22,9 @@ data:
 
       {{- if .Values.config.receivers.istio.enabled }}
       envoy:
-        uri: {{ .Values.config.receivers.istio.envoyFilterUri | default "public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:v0.1.4" }}
+        uri: {{ .Values.config.receivers.istio.envoyFilterUri | default "public.ecr.aws/k9v9d5v2/sentryflow-httpfilter" }}
+        gatewayTag: {{ .Values.config.receivers.istio.gatewayTag | default "latest-gateway" }}
+        sidecarTag: {{ .Values.config.receivers.istio.sidecarTag | default "latest-sidecar" }}
       {{- end }}
 
     receivers:
@@ -34,6 +36,8 @@ data:
 
       {{- if .Values.config.receivers.istio.enabled }}
       serviceMeshes:
+        - name: istio-gateway
+          namespace: "istio-system"
         - name: istio-sidecar
           namespace: {{ .Values.config.receivers.istio.namespace | default "istio-system" }}
       {{- end }}
@@ -51,4 +55,3 @@ data:
     exporter:
       grpc:
         port: {{ .Values.config.grpcPort | default 8080 }}
-

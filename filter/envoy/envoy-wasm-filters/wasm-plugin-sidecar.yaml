@@ -1,7 +1,7 @@
 apiVersion: extensions.istio.io/v1alpha1
 kind: WasmPlugin
 metadata:
-  name: http-filter
+  name: http-filter-sidecar
   namespace: istio-system
 spec:
   # Do not cause all requests to fail with 5xx.
@@ -16,4 +16,5 @@ spec:
     upstream_name: sentryflow
   pluginName: http-filter
   type: HTTP
-  url: anuragrajawat/httpfilter:v0.2 # Change this to your image while trying locally
+  url: public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:latest-sidecar
+

@@ -1,7 +1,6 @@
 [package]
 name = "envoy-wasm-filters"
 version = "0.1.0"
-authors = ["Anurag Rajawat", "anuragsinghrajawat22@gmail.com"]
 edition = "2021"
 
 [lib]
@@ -10,11 +9,18 @@ path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-proxy-wasm = "0.2.2"
-log = "0.4.22"
-serde_json = "1.0.127"
-serde = { version = "1.0.209", features = ["derive"] }
+proxy-wasm = "0.2.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+log = "0.4"
+
+[features]
+default = ["sidecar"]
+sidecar = []
+gateway = []
 
 [profile.release]
-# Tell `rustc` to optimize for small code size.
-opt-level = "s"
+opt-level = "s"      # Optimize for size (WASM modules should be small)
+lto = true          # Enable link-time optimization
+strip = true        # Strip debug symbols
+

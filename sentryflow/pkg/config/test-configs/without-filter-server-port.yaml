@@ -3,7 +3,9 @@
 
 filters:
   envoy:
-    uri: anuragrajawat/httpfilter:v0.1
+    uri: classikh/sentryflow-httpfilter
+    gatewayTag: "latest-gateway"
+    sidecarTag: "latest-sidecar"
 
 receivers: # aka sources
   serviceMeshes:
