@@ -78,8 +78,8 @@ func TestConfig_validate(t *testing.T) {
 					Envoy: &envoyFilterConfig{
 						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -102,8 +102,8 @@ func TestConfig_validate(t *testing.T) {
 					Envoy: &envoyFilterConfig{
 						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -128,8 +128,8 @@ func TestConfig_validate(t *testing.T) {
 					Envoy: &envoyFilterConfig{
 						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -154,8 +154,8 @@ func TestConfig_validate(t *testing.T) {
 					Envoy: &envoyFilterConfig{
 						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: nil,
@@ -173,8 +173,8 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: nil,
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -201,8 +201,8 @@ func TestConfig_validate(t *testing.T) {
 					Envoy: &envoyFilterConfig{
 						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -228,8 +228,8 @@ func TestConfig_validate(t *testing.T) {
 					Envoy: &envoyFilterConfig{
 						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -255,8 +255,8 @@ func TestConfig_validate(t *testing.T) {
 					Envoy: &envoyFilterConfig{
 						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -321,7 +321,7 @@ func TestNew(t *testing.T) {
 					Envoy: &envoyFilterConfig{
 						Uri: "anuragrajawat/httpfilter:v0.1",
 					},
-					Server: &server{
+					HttpServer: &server{
 						Port: 8081,
 					},
 				},
@@ -361,7 +361,7 @@ func TestNew(t *testing.T) {
 					Envoy: &envoyFilterConfig{
 						Uri: "anuragrajawat/httpfilter:v0.1",
 					},
-					Server: &server{
+					HttpServer: &server{
 						Port: 8081,
 					},
 				},
@@ -392,7 +392,7 @@ func TestNew(t *testing.T) {
 					Envoy: &envoyFilterConfig{
 						Uri: "anuragrajawat/httpfilter:v0.1",
 					},
-					Server: &server{
+					HttpServer: &server{
 						Port: 8081,
 					},
 				},

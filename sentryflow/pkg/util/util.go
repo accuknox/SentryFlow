@@ -22,6 +22,7 @@ const (
 	NginxIncorporationIngressController = "nginx-inc-ingress-controller" // https://github.com/nginxinc/kubernetes-ingress/
 	AzureAPIM                           = "Azure-APIM"
 	AWSApiGateway                       = "aws-api-gateway"
+	F5BigIp                             = "f5-big-ip"
 )
 
 func LoggerFromCtx(ctx context.Context) *zap.SugaredLogger {
