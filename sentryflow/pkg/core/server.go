@@ -12,9 +12,8 @@ import (
 	"net/http"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
-
 	protobuf "github.com/accuknox/SentryFlow/protobuf/golang"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (m *Manager) startGrpcServer(port uint16) {
@@ -77,7 +76,6 @@ func (m *Manager) eventsHandler(writer http.ResponseWriter, request *http.Reques
 		http.Error(writer, "failed to unmarshal request body", http.StatusBadRequest)
 		return
 	}
-
 	m.ApiEvents <- apiEvent
 	writer.WriteHeader(http.StatusAccepted)
 }

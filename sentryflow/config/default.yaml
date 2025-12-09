@@ -2,8 +2,10 @@
 # Copyright 2024 Authors of SentryFlow
 
 filters:
-  server:
+  http-server:
     port: 8081
+  tcp-server:
+    port: 5000
 
 # Envoy filter is required for `istio-sidecar` service-mesh receiver.
 #  envoy:
@@ -31,6 +33,8 @@ receivers: # aka sources
 #    - name: Azure-APIM
 #   
 #    - name: aws-api-gateway
+#
+#    - name: f5-big-ip
 
 exporter:
   grpc:
