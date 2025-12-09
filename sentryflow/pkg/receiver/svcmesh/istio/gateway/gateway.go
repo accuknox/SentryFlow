@@ -208,7 +208,7 @@ spec:
 		FilterName:                 FilterName,
 		IstioRootNs:                getIstioRootNamespaceFromConfig(cfg),
 		UpstreamAndClusterName:     UpstreamAndClusterName,
-		SentryFlowFilterServerPort: cfg.Filters.Server.Port,
+		SentryFlowFilterServerPort: cfg.Filters.HttpServer.Port,
 	}
 
 	tmpl, err := template.New("envoyHttpFilter").Parse(httpFilter)

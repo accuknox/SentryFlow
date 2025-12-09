@@ -24,6 +24,7 @@ const (
 	KongGateway                         = "kong-gateway"                 // https://konghq.com/
 	AzureAPIM                           = "Azure-APIM"
 	AWSApiGateway                       = "aws-api-gateway"
+	F5BigIp                             = "f5-big-ip"
 )
 
 func LoggerFromCtx(ctx context.Context) *zap.SugaredLogger {
