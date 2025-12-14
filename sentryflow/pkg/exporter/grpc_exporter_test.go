@@ -117,7 +117,7 @@ func Test_exporter_SendAPIEvent(t *testing.T) {
 
 func Test_exporter_addClientToList(t *testing.T) {
 	// Given
-	e := exporter{
+	e := grpcExporter{
 		clients: &clientList{
 			Mutex:  &sync.Mutex{},
 			client: make(map[string]chan *protobuf.APIEvent),
@@ -139,7 +139,7 @@ func Test_exporter_addClientToList(t *testing.T) {
 
 func Test_exporter_deleteClientFromList(t *testing.T) {
 	// Given
-	e := exporter{
+	e := grpcExporter{
 		clients: &clientList{
 			Mutex:  &sync.Mutex{},
 			client: make(map[string]chan *protobuf.APIEvent),
@@ -161,7 +161,7 @@ func Test_exporter_deleteClientFromList(t *testing.T) {
 
 func Test_exporter_add_and_delete_client_fromList_concurrently(t *testing.T) {
 	// Given
-	e := exporter{
+	e := grpcExporter{
 		clients: &clientList{
 			Mutex:  &sync.Mutex{},
 			client: make(map[string]chan *protobuf.APIEvent),
@@ -234,8 +234,8 @@ func getDummyApiEvent(ctxId int) *protobuf.APIEvent {
 	}
 }
 
-func getExporter() *exporter {
-	return &exporter{
+func getExporter() *grpcExporter {
+	return &grpcExporter{
 		apiEvents: make(chan *protobuf.APIEvent, 100),
 		logger:    zap.S(),
 		clients: &clientList{
@@ -268,7 +268,7 @@ func getClientInfo(t *testing.T) *protobuf.ClientInfo {
 	return clientInfo
 }
 
-func getSentryFlowClientAndCloser(t *testing.T, e *exporter) (protobuf.SentryFlowClient, func()) {
+func getSentryFlowClientAndCloser(t *testing.T, e *grpcExporter) (protobuf.SentryFlowClient, func()) {
 	listener := bufconn.Listen(101024 * 1024)
 	baseServer := grpc.NewServer()
 	protobuf.RegisterSentryFlowServer(baseServer, e)
