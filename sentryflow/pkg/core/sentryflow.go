@@ -6,11 +6,13 @@ package core
 import (
 	"context"
 	"net/http"
+
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 
+	httpExporter "github.com/accuknox/SentryFlow/sentryflow/pkg/exporter/http"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -90,7 +92,10 @@ func (m *Manager) run(cfg *config.Config, kubeConfig string) {
 		m.Logger.Errorf("failed to initialize exporter: %v", err)
 		return
 	}
-
+	if err := httpExporter.Init(m.Ctx, cfg, m.ApiEvents, m.Wg); err != nil {
+		m.Logger.Errorf("failed to initialize http exporter: %v", err)
+		return
+	}
 	m.Wg.Add(1)
 	go func() {
 		defer m.Wg.Done()
