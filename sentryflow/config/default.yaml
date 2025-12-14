@@ -38,3 +38,21 @@ receivers: # aka sources
 exporter:
   grpc:
     port: 8080
+
+  http:
+    enabled: true
+    timeoutSeconds: 5
+    webhooks:
+      - name: test-webhook
+        url: "http://localhost:8089/webhook"
+        method: POST
+        headers:
+          Authorization: "Bearer test-token"
+          X-Source: "sentryflow"
+
+        tls:  
+          insecureSkipVerify: false                   
+          caCertPath: /path/to/ca.crt
+          clientCertPath: /path/to/client.crt
+          clientKeyPath: /path/to/client.key
+          
