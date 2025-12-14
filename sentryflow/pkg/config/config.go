@@ -36,6 +36,19 @@ type server struct {
 	Port uint16 `json:"port"`
 }
 
+type HttpConfig struct {
+	Enabled        bool            `json:"enabled"`
+	TimeoutSeconds uint32          `json:"timeoutSeconds"`
+	Webhooks       []WebhookConfig `json:"webhooks"`
+}
+
+type WebhookConfig struct {
+	Name    string            `json:"name"`
+	Url     string            `json:"url"`
+	Method  string            `json:"method"`
+	Headers map[string]string `json:"headers,omitempty"`
+}
+
 type nginxIngressConfig struct {
 	DeploymentName             string `json:"deploymentName"`
 	ConfigMapName              string `json:"configMapName"`
@@ -49,7 +62,8 @@ type filters struct {
 }
 
 type exporterConfig struct {
-	Grpc *server `json:"grpc"`
+	Grpc *server     `json:"grpc"`
+	HTTP *HttpConfig `json:"http"`
 }
 
 type Config struct {
