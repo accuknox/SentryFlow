@@ -43,12 +43,12 @@ exporter:
     enabled: true
     timeoutSeconds: 5
     webhooks:
-      - name: test-webhook
-        url: "http://localhost:8089/webhook"
+      - name: <name-of-your-webhook>
+        url: <url-of-your-webhook>
         method: POST
         headers:
-          Authorization: "Bearer test-token"
-          X-Source: "sentryflow"
+          Authorization: <Bearer <your-auth-token>
+          X-Source: <sentryflow>
 
         tls:  
           insecureSkipVerify: false                   
