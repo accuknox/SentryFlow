@@ -6,7 +6,7 @@ filters:
     port: 8081
   # Envoy filter is required for `istio-sidecar` and `istio-gateway` service-mesh receiver.
   envoy:
-    uri: classikh/sentryflow-httpfilter
+    uri: public.ecr.aws/k9v9d5v2/sentryflow-httpfilter
     gatewayTag: "latest-gateway"
     sidecarTag: "latest-sidecar"
 
