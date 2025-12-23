@@ -37,7 +37,7 @@ data:
       {{- if .Values.config.receivers.istio.enabled }}
       serviceMeshes:
         - name: istio-gateway
-          namespace: "istio-system"
+          namespace: {{ .Values.config.receivers.istio.namespace | default "istio-system" }}
         - name: istio-sidecar
           namespace: {{ .Values.config.receivers.istio.namespace | default "istio-system" }}
       {{- end }}
