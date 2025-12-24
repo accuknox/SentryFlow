@@ -1,0 +1,169 @@
+-- SPDX-License-Identifier: Apache-2.0
+-- Copyright 2024 Authors of SentryFlow
+--
+-- Custom Kong plugin to send API events to SentryFlow
+
+local Queue = require "kong.tools.queue"
+local cjson = require "cjson"
+local http = require "resty.http"
+local url = require "socket.url"
+local kong_meta = require "kong.meta"
+
+local kong = kong
+local ngx = ngx
+local fmt = string.format
+local tonumber = tonumber
+local pairs = pairs
+
+
+local SentryFlowLogHandler = {
+  PRIORITY = 12,
+  VERSION = kong_meta.version,
+}
+
+
+local parsed_urls_cache = {}
+
+local function parse_url(host_url)
+  local parsed_url = parsed_urls_cache[host_url]
+  if parsed_url then
+    return parsed_url
+  end
+
+  parsed_url = url.parse(host_url)
+  if not parsed_url.port then
+    if parsed_url.scheme == "http" then
+      parsed_url.port = 80
+    elseif parsed_url.scheme == "https" then
+      parsed_url.port = 443
+    end
+  end
+  if not parsed_url.path then
+    parsed_url.path = "/"
+  end
+
+  parsed_urls_cache[host_url] = parsed_url
+  return parsed_url
+end
+
+
+-- Build SentryFlow APIEvent from Kong request/response
+local function build_sentryflow_event()
+  local var = ngx.var
+  local ctx = ngx.ctx
+  local request = kong.request
+  local response = kong.response
+  local service_response = kong.service.response
+
+  -- Request headers
+  local req_headers = request.get_headers() or {}
+  -- Add pseudo-headers for compatibility
+  req_headers[":scheme"] = var.scheme or "http"
+  req_headers[":path"] = request.get_path() or ""
+  req_headers[":method"] = request.get_method() or ""
+  req_headers[":authority"] = request.get_host() or ""
+
+  -- Response headers
+  local res_headers = response.get_headers() or {}
+  res_headers[":status"] = tostring(response.get_status() or 0)
+
+  -- Build APIEvent matching SentryFlow protobuf schema
+  local api_event = {
+    metadata = {
+      timestamp = ngx.time(),
+      receiver_name = "kong",
+      receiver_version = kong_meta.version,
+    },
+    source = {
+      ip = var.remote_addr or "",
+      port = tonumber(var.remote_port) or 0,
+    },
+    destination = {
+      ip = var.server_addr or "",
+      port = tonumber(var.server_port) or 0,
+    },
+    request = {
+      headers = req_headers,
+      body = "", -- Kong doesn't easily provide request body in log phase
+    },
+    response = {
+      headers = res_headers,
+      body = "", -- Response body capture requires buffering
+    },
+    protocol = var.server_protocol or "HTTP/1.1",
+  }
+
+  return api_event
+end
+
+
+-- Send entries to SentryFlow
+local function send_entries(conf, entries)
+  local http_endpoint = conf.http_endpoint
+  local parsed_url = parse_url(http_endpoint)
+  local host = parsed_url.host
+  local port = tonumber(parsed_url.port)
+
+  local httpc = http.new()
+  httpc:set_timeout(conf.timeout)
+
+  local payload
+  if #entries == 1 then
+    payload = entries[1]
+  else
+    payload = "[" .. table.concat(entries, ",") .. "]"
+  end
+
+  local log_server_url = fmt("%s://%s:%d%s", parsed_url.scheme, host, port, parsed_url.path)
+
+  local res, err = httpc:request_uri(log_server_url, {
+    method = "POST",
+    headers = {
+      ["Content-Type"] = "application/json",
+      ["Content-Length"] = #payload,
+    },
+    body = payload,
+    keepalive_timeout = conf.keepalive,
+    ssl_verify = false,
+  })
+
+  if not res then
+    return nil, "failed request to " .. host .. ":" .. tostring(port) .. ": " .. err
+  end
+
+  if res.status < 300 then
+    return true
+  else
+    return nil, "request to " .. host .. ":" .. tostring(port) .. " returned status " .. tostring(res.status)
+  end
+end
+
+
+local function make_queue_name(conf)
+  return fmt("sentryflow-log:%s:%s:%s",
+    conf.http_endpoint,
+    conf.timeout,
+    conf.keepalive)
+end
+
+
+function SentryFlowLogHandler:log(conf)
+  local api_event = build_sentryflow_event()
+  local payload = cjson.encode(api_event)
+
+  local queue_conf = Queue.get_plugin_params("sentryflow-log", conf, make_queue_name(conf))
+
+  local ok, err = Queue.enqueue(
+    queue_conf,
+    send_entries,
+    conf,
+    payload
+  )
+
+  if not ok then
+    kong.log.err("Failed to enqueue log entry to SentryFlow: ", err)
+  end
+end
+
+
+return SentryFlowLogHandler
