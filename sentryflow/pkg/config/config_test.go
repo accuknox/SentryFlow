@@ -19,6 +19,7 @@ func TestConfig_validate(t *testing.T) {
 		Receivers *receivers
 		Exporter  *exporterConfig
 	}
+
 	tests := []struct {
 		name               string
 		fields             fields
@@ -76,7 +77,9 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						Uri:        "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						GatewayTag: "latest-gateway",
+						SidecarTag: "latest-sidecar",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -100,7 +103,9 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						Uri:        "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						GatewayTag: "latest-gateway",
+						SidecarTag: "latest-sidecar",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -126,7 +131,9 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						Uri:        "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						GatewayTag: "latest-gateway",
+						SidecarTag: "latest-sidecar",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -152,7 +159,9 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						Uri:        "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						GatewayTag: "latest-gateway",
+						SidecarTag: "latest-sidecar",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -199,7 +208,9 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						Uri:        "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						GatewayTag: "latest-gateway",
+						SidecarTag: "latest-sidecar",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -226,7 +237,9 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						Uri:        "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						GatewayTag: "latest-gateway",
+						SidecarTag: "latest-sidecar",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -253,7 +266,9 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						Uri:        "public.ecr.aws/k9v9d5v2/http-filter:v0.1",
+						GatewayTag: "latest-gateway",
+						SidecarTag: "latest-sidecar",
 					},
 					Server: &server{
 						Port: SentryFlowDefaultFilterServerPort,
@@ -277,6 +292,7 @@ func TestConfig_validate(t *testing.T) {
 			expectedErrMessage: "",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Config{
@@ -286,6 +302,7 @@ func TestConfig_validate(t *testing.T) {
 			}
 
 			err := c.validate()
+
 			if tt.wantErr && err == nil {
 				t.Errorf("validate() expected error but got nil")
 			} else if !tt.wantErr && err != nil {
@@ -304,6 +321,7 @@ func TestNew(t *testing.T) {
 		configFilePath string
 		logger         *zap.SugaredLogger
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -319,7 +337,9 @@ func TestNew(t *testing.T) {
 			want: &Config{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "anuragrajawat/httpfilter:v0.1",
+						Uri:        "classikh/sentryflow-httpfilter",
+						GatewayTag: "latest-gateway",
+						SidecarTag: "latest-sidecar",
 					},
 					Server: &server{
 						Port: 8081,
@@ -327,6 +347,10 @@ func TestNew(t *testing.T) {
 				},
 				Receivers: &receivers{
 					ServiceMeshes: []*nameAndNamespace{
+						{
+							Name:      "istio-gateway",
+							Namespace: "istio-system",
+						},
 						{
 							Name:      "istio-sidecar",
 							Namespace: "istio-system",
@@ -359,7 +383,9 @@ func TestNew(t *testing.T) {
 			want: &Config{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "anuragrajawat/httpfilter:v0.1",
+						Uri:        "classikh/sentryflow-httpfilter",
+						GatewayTag: "latest-gateway",
+						SidecarTag: "latest-sidecar",
 					},
 					Server: &server{
 						Port: 8081,
@@ -390,7 +416,9 @@ func TestNew(t *testing.T) {
 			want: &Config{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri: "anuragrajawat/httpfilter:v0.1",
+						Uri:        "classikh/sentryflow-httpfilter",
+						GatewayTag: "latest-gateway",
+						SidecarTag: "latest-sidecar",
 					},
 					Server: &server{
 						Port: 8081,
@@ -422,13 +450,16 @@ func TestNew(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.configFilePath, tt.args.logger)
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("New() got = %v, want %v", got, tt.want)
 			}

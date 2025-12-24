@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2024 Authors of SentryFlow
 
-package sidecar
+package gateway
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	extensionsv1alpha1 "istio.io/api/extensions/v1alpha1"
 	"istio.io/api/type/v1beta1"
 	"istio.io/client-go/pkg/apis/extensions/v1alpha1"
@@ -27,7 +28,7 @@ import (
 )
 
 const (
-	FilterName             = "http-filter-sidecar"
+	FilterName             = "http-filter-gateway"
 	UpstreamAndClusterName = "sentryflow"
 	ApiPath                = "/api/v1/events"
 )
@@ -39,12 +40,12 @@ type envoyFilterData struct {
 	SentryFlowFilterServerPort uint16
 }
 
-// StartMonitoring begins monitoring API calls within the Istio (sidecar based)
-// service mesh deployed in a Kubernetes cluster. It achieves this by creating a
+// StartMonitoring begins monitoring API calls within the Istio gateway
+// in a Kubernetes cluster. It achieves this by creating a
 // custom EnvoyFilter resource in Kubernetes.
 func StartMonitoring(ctx context.Context, cfg *config.Config, k8sClient client.Client, lock *sync.Mutex) {
-	logger := util.LoggerFromCtx(ctx).Named("istio-sidecar")
-	logger.Info("Starting istio sidecar mesh monitoring")
+	logger := util.LoggerFromCtx(ctx).Named("istio-gateway")
+	logger.Info("Starting istio gateway monitoring")
 
 	lock.Lock()
 	if err := createResources(ctx, cfg, k8sClient); err != nil {
@@ -52,26 +53,26 @@ func StartMonitoring(ctx context.Context, cfg *config.Config, k8sClient client.C
 		lock.Unlock()
 		return
 	}
-	logger.Info("Started istio sidecar mesh monitoring")
+	logger.Info("Started istio gateway monitoring")
 	lock.Unlock()
 
 	<-ctx.Done()
-	logger.Info("Shutting down istio sidecar mesh monitoring")
+	logger.Info("Shutting down istio gateway mesh monitoring")
 
 	lock.Lock()
 	doCleanup(logger, k8sClient, getIstioRootNamespaceFromConfig(cfg))
 	lock.Unlock()
 
-	logger.Info("Stopped istio sidecar mesh monitoring")
+	logger.Info("Stopped istio gateway mesh monitoring")
 }
 
 func createResources(ctx context.Context, cfg *config.Config, k8sClient client.Client) error {
 	if err := createEnvoyFilter(ctx, cfg, k8sClient); err != nil {
-		return fmt.Errorf("failed to create EnvoyFilter. Stopping istio sidecar mesh monitoring, error: %v", err)
+		return fmt.Errorf("failed to create EnvoyFilter. Stopping istio gateway mesh monitoring, error: %v", err)
 	}
 
 	if err := createWasmPlugin(ctx, cfg, k8sClient); err != nil {
-		return fmt.Errorf("failed to create WasmPlugin. Stopping istio sidecar monitoring, error: %v", err)
+		return fmt.Errorf("failed to create WasmPlugin. Stopping istio gateway monitoring, error: %v", err)
 	}
 
 	return nil
@@ -102,7 +103,13 @@ func createWasmPlugin(ctx context.Context, cfg *config.Config, k8sClient client.
 			},
 		},
 		Spec: extensionsv1alpha1.WasmPlugin{
-			Url: fmt.Sprintf("%s:%s", cfg.Filters.Envoy.Uri, cfg.Filters.Envoy.SidecarTag),
+			Url: fmt.Sprintf("%s:%s", cfg.Filters.Envoy.Uri, cfg.Filters.Envoy.GatewayTag),
+			Selector: &v1beta1.WorkloadSelector{
+				MatchLabels: client.MatchingLabels{
+					"istio": "ingressgateway",
+				},
+			},
+			Priority: &wrapperspb.Int32Value{Value: 100},
 			PluginConfig: &_struct.Struct{
 				Fields: map[string]*_struct.Value{
 					"upstream_name": {
@@ -122,14 +129,7 @@ func createWasmPlugin(ctx context.Context, cfg *config.Config, k8sClient client.
 					},
 				},
 			},
-			PluginName:   FilterName,
 			FailStrategy: extensionsv1alpha1.FailStrategy_FAIL_OPEN,
-			Match: []*extensionsv1alpha1.WasmPlugin_TrafficSelector{
-				{
-					Mode: v1beta1.WorkloadMode_CLIENT,
-				},
-			},
-			Type: extensionsv1alpha1.PluginType_HTTP,
 		},
 	}
 
@@ -175,7 +175,7 @@ metadata:
   name: {{ .FilterName }}
   # Deploy the filter to whatever istio considers its "root" namespace so that we
   # don't have to create the ConfigMap(s) containing the WASM filter binary,
-  # and the associated annotations/configuration for the Istio sidecar(s).
+  # and the associated annotations/configuration for the Istio gateway(s).
   # https://istio.io/latest/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig:~:text=No-,rootNamespace,-string
   namespace: {{ .IstioRootNs }}
   labels:
@@ -271,7 +271,7 @@ func deleteEnvoyFilter(logger *zap.SugaredLogger, k8sClient client.Client, istio
 func getIstioRootNamespaceFromConfig(cfg *config.Config) string {
 	for _, svcMesh := range cfg.Receivers.ServiceMeshes {
 		switch svcMesh.Name {
-		case util.ServiceMeshIstioSidecar:
+		case util.ServiceMeshIstioGateway:
 			return svcMesh.Namespace
 		}
 	}

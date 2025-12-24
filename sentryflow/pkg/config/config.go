@@ -29,7 +29,9 @@ type receivers struct {
 }
 
 type envoyFilterConfig struct {
-	Uri string `json:"uri"`
+	Uri        string `json:"uri"`
+	GatewayTag string `json:"gatewayTag"`
+	SidecarTag string `json:"sidecarTag"`
 }
 
 type server struct {

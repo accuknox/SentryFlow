@@ -13,6 +13,7 @@ type LoggerContextKey struct{}
 
 const (
 	ServiceMeshIstioSidecar             = "istio-sidecar"
+	ServiceMeshIstioGateway             = "istio-gateway"
 	ServiceMeshIstioAmbient             = "istio-ambient"
 	ServiceMeshKong                     = "kong"
 	ServiceMeshConsul                   = "consul"
