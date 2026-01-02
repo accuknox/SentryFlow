@@ -23,9 +23,7 @@ jobs:
       DOCKER_CONTEXT: .
       DOCKERFILE: ./sentryflow/Dockerfile
       IMAGE_NAME: sentryflow
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+    secrets: inherit
 
   release-envoy-filter-sidecar-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
@@ -38,9 +36,7 @@ jobs:
       REGISTRY_TYPE: public
       DOCKER_BUILD_ARGS: "--build-arg PLUGIN_TYPE=sidecar"
       IMAGE_TAG: "latest-sidecar"
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+    secrets: inherit
 
   release-envoy-filter-gateway-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
@@ -53,9 +49,7 @@ jobs:
       REGISTRY_TYPE: public
       DOCKER_BUILD_ARGS: "--build-arg PLUGIN_TYPE=gateway"
       IMAGE_TAG: "latest-gateway"
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+    secrets: inherit
 
   update-image-tags-in-helm-charts:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
@@ -67,6 +61,4 @@ jobs:
     with: 
       tag: ${{ github.ref_name }}
       helm_repo: "public.ecr.aws/k9v9d5v2/"
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+    secrets: inherit
