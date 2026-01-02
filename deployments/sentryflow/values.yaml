@@ -111,6 +111,11 @@ config:
 
     awsApigw:
       enabled: false
+
+    kongGateway:
+      enabled: false
+      deploymentName: "kong-kong"
+      namespace: "kong"
 volumes:
   - name: sentryflow
     configMap:

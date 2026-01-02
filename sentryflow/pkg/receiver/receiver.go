@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/config"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/other/konggateway"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/other/nginx/nginxinc"
 	istiogateway "github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/svcmesh/istio/gateway"
 	istiosidecar "github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/svcmesh/istio/sidecar"
@@ -58,6 +59,12 @@ func Init(ctx context.Context, k8sClient client.Client, cfg *config.Config, wg *
 				go func() {
 					defer wg.Done()
 					nginxinc.Start(ctx, cfg, k8sClient)
+				}()
+			case util.KongGateway:
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					konggateway.Start(ctx, cfg, k8sClient)
 				}()
 			default:
 				return fmt.Errorf("unsupported receiver, %v", other.Name)
