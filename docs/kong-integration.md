@@ -32,11 +32,9 @@ Deploy SentryFlow with Kong receiver enabled. This will automatically create the
 
 ```shell
 helm upgrade --install sentryflow \
-  ./deployments/sentryflow \
+  oci://public.ecr.aws/k9v9d5v2/sentryflow-helm-charts \
   --namespace sentryflow \
   --create-namespace \
-  --set image.repository=sanskardevops/sentryflow \
-  --set image.tag=latest \
   --set config.receivers.kongGateway.enabled=true \
   --set config.receivers.kongGateway.namespace=kong \
   --set config.receivers.kongGateway.deploymentName=kong-kong
