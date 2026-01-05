@@ -39,6 +39,14 @@ data:
       {{- end }}
 
     receivers:
+      {{- if .Values.config.receivers.istio.enabled }}
+      serviceMeshes:
+        - name: istio-gateway
+          namespace: {{ .Values.config.receivers.istio.namespace | default "istio-system" }}
+        - name: istio-sidecar
+          namespace: {{ .Values.config.receivers.istio.namespace | default "istio-system" }}
+      {{- end }}
+
       others:
       {{- if .Values.config.receivers.nginxIngressController.enabled }}
         - name: nginx-inc-ingress-controller

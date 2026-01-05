@@ -109,7 +109,7 @@ Update `values.yaml` or install with set flags:
 
 ```bash
 # Path to your downloaded service account key
-helm upgrade --install sentryflow ./deployments/sentryflow \
+helm upgrade --install sentryflow oci://public.ecr.aws/k9v9d5v2/sentryflow-helm-charts \
   --namespace sentryflow --create-namespace \
   --set config.receivers.gcp.enabled=true \
   --set config.receivers.gcp.projectID=$(gcloud config get-value project) \
