@@ -4,11 +4,11 @@
 replicaCount: 1
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: public.ecr.aws/k9v9d5v2/sentryflow
+  repository: sanskardevops/sentryflow
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "0.0.7"
 # Arguments to pass SentryFlow container
 args:
   - --config
@@ -111,6 +111,14 @@ config:
 
     awsApigw:
       enabled: false
+
+    gcp:
+      enabled: false
+      projectID: ""
+      subscriptionID: ""
+      serviceAccountJSON: ""
+      secretName: ""
+      secretKey: "key.json"
 volumes:
   - name: sentryflow
     configMap:
@@ -120,4 +128,9 @@ volumeMounts:
   - name: sentryflow
     mountPath: "/var/lib/sentryflow/"
     readOnly: true
+
+secrets:
+  receivers:
+    gcp:
+      serviceAccountJSON: ""
 
