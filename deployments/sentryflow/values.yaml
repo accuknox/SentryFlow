@@ -116,9 +116,7 @@ config:
       enabled: false
       projectID: ""
       subscriptionID: ""
-      serviceAccountJSON: ""
-      secretName: ""
-      secretKey: "key.json"
+      
 volumes:
   - name: sentryflow
     configMap:
