@@ -39,6 +39,12 @@ data:
       {{- end }}
 
     receivers:
+      {{- if .Values.config.receivers.nginxIngressController.enabled }}
+      others:
+        - name: nginx-inc-ingress-controller
+          namespace: {{ .Values.config.receivers.nginxIngressController.namespace }}
+      {{- end }}
+
       {{- if .Values.config.receivers.istio.enabled }}
       serviceMeshes:
         - name: istio-gateway
@@ -47,19 +53,19 @@ data:
           namespace: {{ .Values.config.receivers.istio.namespace | default "istio-system" }}
       {{- end }}
 
-      others:
-      {{- if .Values.config.receivers.nginxIngressController.enabled }}
-        - name: nginx-inc-ingress-controller
-          namespace: {{ .Values.config.receivers.nginxIngressController.namespace }}
-      {{- end }}
       {{- if .Values.config.receivers.azureApim.enabled }}
+      others:
         - name: Azure-APIM
       {{- end }}
-      {{- if .Values.config.receivers.gcp.enabled }}
-        - name: gcp-api-gateway
-      {{- end }}
+
       {{- if .Values.config.receivers.awsApigw.enabled }}
+      others:
         - name: aws-api-gateway
+      {{- end }}
+
+      {{- if .Values.config.receivers.gcp.enabled }}
+      others:
+        - name: gcp-api-gateway
       {{- end }}
 
     exporter:
