@@ -26,23 +26,27 @@ helm install kong kong/kong \
   --set admin.type=NodePort
 ```
 
-### 2. Install SentryFlow Custom Plugin
+### 2. Deploy SentryFlow
 
-We need to mount the `sentryflow-log` plugin into the Kong proxy container.
-
-**Create ConfigMap from plugin files:**
+Deploy SentryFlow with Kong receiver enabled. This will automatically create the `sentryflow-log-plugin` ConfigMap and the `KongClusterPlugin` resource.
 
 ```shell
-# Create ConfigMap
-kubectl create configmap sentryflow-log-plugin \
-  --from-file=handler.lua=filter/kong/sentryflow-log/handler.lua \
-  --from-file=schema.lua=filter/kong/sentryflow-log/schema.lua \
-  -n kong
+helm upgrade --install sentryflow \
+  ./deployments/sentryflow \
+  --namespace sentryflow \
+  --create-namespace \
+  --set image.repository=sanskardevops/sentryflow \
+  --set image.tag=latest \
+  --set config.receivers.kongGateway.enabled=true \
+  --set config.receivers.kongGateway.namespace=kong \
+  --set config.receivers.kongGateway.deploymentName=kong-kong
 ```
 
-**Patch Kong Deployment:**
+### 3. Patch Kong Deployment
 
-Mount the plugin into the **proxy container** (usually index 1) and the **ingress-controller** (index 0).
+We need to mount the `sentryflow-log` plugin into the Kong proxy container. The ConfigMap `sentryflow-log-plugin` (created by SentryFlow Helm chart) contains the plugin code.
+
+**Mount the plugin:**
 
 ```shell
 kubectl patch deployment kong-kong -n kong --type=json -p='[
@@ -71,45 +75,7 @@ kubectl patch deployment kong-kong -n kong --type=json -p='[
 kubectl set env deployment/kong-kong -n kong KONG_PLUGINS=bundled,sentryflow-log
 ```
 
-> **Note:** Ensure the `volumeMount` is applied to the `proxy` container.
-
-### 3. Deploy SentryFlow
-
-Deploy SentryFlow with Kong receiver enabled.
-
-```shell
-helm upgrade --install sentryflow \
-  ./deployments/sentryflow \
-  --namespace sentryflow \
-  --create-namespace \
-  --set image.repository=sanskardevops/sentryflow \
-  --set image.tag=latest \
-  --set config.receivers.kongGateway.enabled=true \
-  --set config.receivers.kongGateway.namespace=kong \
-  --set config.receivers.kongGateway.deploymentName=kong-kong
-```
-
-### 4. Enable sentryflow-log Plugin Globally
-
-Create a `KongClusterPlugin` to enable logging for all routes.
-
-```shell
-kubectl apply -f - <<EOF
-apiVersion: configuration.konghq.com/v1
-kind: KongClusterPlugin
-metadata:
-  name: sentryflow-log
-  annotations:
-    kubernetes.io/ingress.class: kong
-  labels:
-    global: "true"
-plugin: sentryflow-log
-config:
-  http_endpoint: "http://sentryflow.sentryflow:8081/api/v1/events"
-  timeout: 10000
-  keepalive: 60000
-EOF
-```
+> **Note:** Ensure the `volumeMount` is applied to the `proxy` container (usually index 1) and the `ingress-controller` (usually index 0) if needed. The above patch applies to index 1.
 
 ### 5. Patch Discovery Engine
 

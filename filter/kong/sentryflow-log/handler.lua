@@ -84,13 +84,13 @@ local function build_sentryflow_event()
     },
     request = {
       headers = req_headers,
-      body = "", -- Kong doesn't easily provide request body in log phase
+      body = kong.request.get_raw_body(),
     },
     response = {
       headers = res_headers,
-      body = "", -- Response body capture requires buffering
+      body = kong.service.response.get_raw_body(),
     },
-    protocol = var.server_protocol or "HTTP/1.1",
+    protocol = var.server_protocol or "",
   }
 
   return api_event

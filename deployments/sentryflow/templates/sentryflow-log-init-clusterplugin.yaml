@@ -1,0 +1,16 @@
+{{- if .Values.config.receivers.kongGateway.enabled }}
+apiVersion: configuration.konghq.com/v1
+kind: KongClusterPlugin
+metadata:
+  name: sentryflow-log
+  annotations:
+    kubernetes.io/ingress.class: kong
+  labels:
+    global: "true"
+    {{- include "sentryflow.labels" . | nindent 4 }}
+plugin: sentryflow-log
+config:
+  http_endpoint: {{ .Values.config.receivers.kongGateway.plugin.httpEndpoint | default "http://sentryflow.sentryflow:8081/api/v1/events" | quote }}
+  timeout: {{ .Values.config.receivers.kongGateway.plugin.timeout | default 10000 }}
+  keepalive: {{ .Values.config.receivers.kongGateway.plugin.keepalive | default 60000 }}
+{{- end }}
