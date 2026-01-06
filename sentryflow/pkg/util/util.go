@@ -21,6 +21,7 @@ const (
 	OpenTelemetry                       = "otel"
 	NginxWebServer                      = "nginx-webserver"
 	NginxIncorporationIngressController = "nginx-inc-ingress-controller" // https://github.com/nginxinc/kubernetes-ingress/
+	GCPAPIGateway                       = "gcp-api-gateway"
 	AzureAPIM                           = "Azure-APIM"
 	AWSApiGateway                       = "aws-api-gateway"
 )

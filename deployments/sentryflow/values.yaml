@@ -111,6 +111,12 @@ config:
 
     awsApigw:
       enabled: false
+
+    gcp:
+      enabled: false
+      projectID: ""
+      subscriptionID: ""
+      
 volumes:
   - name: sentryflow
     configMap:
@@ -120,4 +126,9 @@ volumeMounts:
   - name: sentryflow
     mountPath: "/var/lib/sentryflow/"
     readOnly: true
+
+secrets:
+  receivers:
+    gcp:
+      serviceAccountJSON: ""
 

@@ -27,6 +27,17 @@ data:
         sidecarTag: {{ .Values.config.receivers.istio.sidecarTag | default "latest-sidecar" }}
       {{- end }}
 
+      {{- if .Values.config.receivers.gcp.enabled }}
+      gcp:
+        projectID: {{ .Values.config.receivers.gcp.projectID }}
+        subscriptionID: {{ .Values.config.receivers.gcp.subscriptionID }}
+        {{- if or .Values.config.receivers.gcp.secretName .Values.secrets.receivers.gcp.serviceAccountJSON }}
+        serviceAccountJSON: "/etc/sentryflow/gcp/{{ .Values.config.receivers.gcp.secretKey | default "key.json" }}"
+        {{- else }}
+        serviceAccountJSON: {{ .Values.config.receivers.gcp.serviceAccountJSON | quote }}
+        {{- end }}
+      {{- end }}
+
     receivers:
       {{- if .Values.config.receivers.nginxIngressController.enabled }}
       others:
@@ -50,6 +61,11 @@ data:
       {{- if .Values.config.receivers.awsApigw.enabled }}
       others:
         - name: aws-api-gateway
+      {{- end }}
+
+      {{- if .Values.config.receivers.gcp.enabled }}
+      others:
+        - name: gcp-api-gateway
       {{- end }}
 
     exporter:

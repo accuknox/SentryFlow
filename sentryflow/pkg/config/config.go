@@ -66,9 +66,16 @@ type nginxIngressConfig struct {
 	SentryFlowNjsConfigMapName string `json:"sentryFlowNjsConfigMapName"`
 }
 
+type gcpConfig struct {
+	ProjectID          string `json:"projectID"`
+	SubscriptionID     string `json:"subscriptionID"`
+	ServiceAccountJSON string `json:"serviceAccountJSON"` // Path to SA JSON key file
+}
+
 type filters struct {
 	Envoy        *envoyFilterConfig  `json:"envoy,omitempty"`
 	NginxIngress *nginxIngressConfig `json:"nginxIngress,omitempty"`
+	GCP          *gcpConfig          `json:"gcp,omitempty"`
 	Server       *server             `json:"server,omitempty"`
 }
 
