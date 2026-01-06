@@ -38,6 +38,28 @@ type server struct {
 	Port uint16 `json:"port"`
 }
 
+type HttpConfig struct {
+	Enabled        bool            `json:"enabled"`
+	TimeoutSeconds uint32          `json:"timeoutSeconds"`
+	Webhooks       []WebhookConfig `json:"webhooks"`
+}
+
+type WebhookConfig struct {
+	Name    string            `mapstructure:"name"`
+	URL     string            `mapstructure:"url"`
+	Method  string            `mapstructure:"method"`
+	Headers map[string]string `mapstructure:"headers"`
+
+	TLS *WebhookTLSConfig `mapstructure:"tls,omitempty"`
+}
+
+type WebhookTLSConfig struct {
+	InsecureSkipVerify bool   `mapstructure:"insecureSkipVerify"`
+	CACertPath         string `mapstructure:"caCertPath"`
+	ClientCertPath     string `mapstructure:"clientCertPath"`
+	ClientKeyPath      string `mapstructure:"clientKeyPath"`
+}
+
 type nginxIngressConfig struct {
 	DeploymentName             string `json:"deploymentName"`
 	ConfigMapName              string `json:"configMapName"`
@@ -50,14 +72,15 @@ type filters struct {
 	Server       *server             `json:"server,omitempty"`
 }
 
-type exporterConfig struct {
-	Grpc *server `json:"grpc"`
+type ExporterConfig struct {
+	Grpc *server     `json:"grpc"`
+	HTTP *HttpConfig `json:"http"`
 }
 
 type Config struct {
 	Filters   *filters        `json:"filters"`
 	Receivers *receivers      `json:"receivers"`
-	Exporter  *exporterConfig `json:"exporter"`
+	Exporter  *ExporterConfig `json:"exporter"`
 }
 
 func (c *Config) validate() error {
