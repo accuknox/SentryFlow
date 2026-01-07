@@ -66,9 +66,14 @@ type nginxIngressConfig struct {
 	SentryFlowNjsConfigMapName string `json:"sentryFlowNjsConfigMapName"`
 }
 
+type kongGatewayConfig struct {
+	DeploymentName string `json:"deploymentName"`
+}
+
 type filters struct {
 	Envoy        *envoyFilterConfig  `json:"envoy,omitempty"`
 	NginxIngress *nginxIngressConfig `json:"nginxIngress,omitempty"`
+	KongGateway  *kongGatewayConfig  `json:"kongGateway,omitempty"`
 	Server       *server             `json:"server,omitempty"`
 }
 

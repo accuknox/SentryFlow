@@ -27,6 +27,11 @@ data:
         sidecarTag: {{ .Values.config.receivers.istio.sidecarTag | default "latest-sidecar" }}
       {{- end }}
 
+      {{- if .Values.config.receivers.kongGateway.enabled }}
+      kongGateway:
+        deploymentName: {{ .Values.config.receivers.kongGateway.deploymentName }}
+      {{- end }}
+
     receivers:
       {{- if .Values.config.receivers.nginxIngressController.enabled }}
       others:
@@ -45,6 +50,12 @@ data:
       {{- if .Values.config.receivers.azureApim.enabled }}
       others:
         - name: Azure-APIM
+      {{- end }}
+
+      {{- if .Values.config.receivers.kongGateway.enabled }}
+      others:
+        - name: kong-gateway
+          namespace: {{ .Values.config.receivers.kongGateway.namespace }}
       {{- end }}
 
       {{- if .Values.config.receivers.awsApigw.enabled }}

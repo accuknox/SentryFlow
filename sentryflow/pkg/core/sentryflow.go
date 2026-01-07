@@ -62,7 +62,7 @@ func (m *Manager) areK8sReceivers(cfg *config.Config) bool {
 	}
 
 	for _, other := range cfg.Receivers.Others {
-		if other.Name == util.NginxIncorporationIngressController {
+		if other.Name == util.NginxIncorporationIngressController || other.Name == util.KongGateway {
 			return true
 		}
 	}
