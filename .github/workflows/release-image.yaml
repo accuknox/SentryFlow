@@ -43,9 +43,7 @@ on:
         required: true
 
 env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }} 
-  AWS_REGION: us-east-1
+  AWS_REGION: us-east-1  # Only keep the region here
 
 jobs:
   release-image:
@@ -58,15 +56,16 @@ jobs:
       - name: Set up AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
+          # Use the secrets passed from the calling workflow
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Get tag
         id: tag
         run: |
-          if [ ${{ inputs.IMAGE_TAG }} == "" ]; then
-            if [ ${{ github.ref }} == "refs/heads/main" ]; then
+          if [ "${{ inputs.IMAGE_TAG }}" == "" ]; then
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
               echo "tag=latest" >> $GITHUB_OUTPUT
             else
               echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
