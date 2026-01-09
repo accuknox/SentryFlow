@@ -60,15 +60,8 @@ runs:
   using: composite
   steps:
   - name: Docker build
-    uses: accuknox/common-gh-actions/actions/docker-build@main
-    id: docker-build
-    with:
-      docker-context: ${{ inputs.docker_context }}
-      file-path: ${{ inputs.dockerfile_path }}
-      tag: ${{ inputs.tag }}
-      image-name: ${{ inputs.image_name }}
-      repo: ${{ inputs.repository_name }}
-      args: ${{ inputs.docker_build_args }}
+    shell: bash
+    run: docker build -f ${{ inputs.dockerfile_path }} ${{ inputs.docker_context }} --tag ${{ inputs.repository_name }}/${{ inputs.image_name }}:${{ inputs.tag }} ${{ inputs.docker_build_args }} 
 
   # - name: Run Trivy vulnerability scanner
   #   uses: accuknox/common-gh-actions/actions/container-scan@main
