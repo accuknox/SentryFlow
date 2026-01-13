@@ -111,6 +111,21 @@ config:
 
     awsApigw:
       enabled: false
+
+  httpExporter:
+    enabled: false
+    timeoutSeconds: 5
+    webhook:
+      name: ""
+      url: ""
+      method: "POST"
+      headers: {}
+      tls:
+        caCertPath: ""
+        clientCertPath: ""
+        clientKeyPath: ""
+        insecureSkipVerify: false
+            
 volumes:
   - name: sentryflow
     configMap:
