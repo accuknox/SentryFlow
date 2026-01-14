@@ -40,7 +40,7 @@ exporter:
     port: 8080
 
   http:
-    enabled: true
+    enabled: false
     timeoutSeconds: 5
     webhooks:
       - name: <name-of-your-webhook>
@@ -49,10 +49,8 @@ exporter:
         headers:
           Authorization: <Bearer <your-auth-token>
           X-Source: <sentryflow>
-
-        tls:  
-          insecureSkipVerify: false                   
+        tls:                   
           caCertPath: /path/to/ca.crt
           clientCertPath: /path/to/client.crt
           clientKeyPath: /path/to/client.key
-          
+          insecureSkipVerify: false
