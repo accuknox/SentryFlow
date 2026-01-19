@@ -17,7 +17,7 @@ func TestConfig_validate(t *testing.T) {
 	type fields struct {
 		Filters   *filters
 		Receivers *receivers
-		Exporter  *exporterConfig
+		Exporter  *ExporterConfig
 	}
 
 	tests := []struct {
@@ -38,7 +38,7 @@ func TestConfig_validate(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{
 						Port: 11111,
 					},
@@ -63,7 +63,7 @@ func TestConfig_validate(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{
 						Port: 11111,
 					},
@@ -119,7 +119,7 @@ func TestConfig_validate(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: nil,
 				},
 			},
@@ -147,7 +147,7 @@ func TestConfig_validate(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{},
 				},
 			},
@@ -168,7 +168,7 @@ func TestConfig_validate(t *testing.T) {
 					},
 				},
 				Receivers: nil,
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{
 						Port: 11111,
 					},
@@ -194,7 +194,7 @@ func TestConfig_validate(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{
 						Port: 11111,
 					},
@@ -223,7 +223,7 @@ func TestConfig_validate(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{
 						Port: 11111,
 					},
@@ -252,7 +252,7 @@ func TestConfig_validate(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{
 						Port: 11111,
 					},
@@ -282,7 +282,7 @@ func TestConfig_validate(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{
 						Port: 11111,
 					},
@@ -357,7 +357,7 @@ func TestNew(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{
 						Port: 8080,
 					},
@@ -399,7 +399,7 @@ func TestNew(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{
 						Port: 8080,
 					},
@@ -432,7 +432,7 @@ func TestNew(t *testing.T) {
 						},
 					},
 				},
-				Exporter: &exporterConfig{
+				Exporter: &ExporterConfig{
 					Grpc: &server{
 						Port: 8080,
 					},

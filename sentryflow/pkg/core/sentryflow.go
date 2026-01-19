@@ -6,6 +6,9 @@ package core
 import (
 	"context"
 	"net/http"
+	"sync/atomic"
+	"time"
+
 	"os"
 	"os/signal"
 	"sync"
@@ -39,10 +42,18 @@ type Manager struct {
 	K8sClient           client.Client
 	Wg                  *sync.WaitGroup
 	ApiEvents           chan *protobuf.APIEvent
+	GrpcEvents          chan *protobuf.APIEvent
+	HttpEvents          chan *protobuf.APIEvent
 	configChan          chan *config.Config
 	receiversCtx        context.Context
 	receiversCancelFunc context.CancelFunc
 	receiversLock       *sync.Mutex
+}
+
+type fanoutStats struct {
+	inCount  uint64
+	grpcDrop uint64
+	httpDrop uint64
 }
 
 func (m *Manager) areK8sReceivers(cfg *config.Config) bool {
@@ -64,6 +75,8 @@ func (m *Manager) run(cfg *config.Config, kubeConfig string) {
 	m.GrpcServer = grpc.NewServer()
 	m.Wg = &sync.WaitGroup{}
 	m.ApiEvents = make(chan *protobuf.APIEvent, 10240)
+	m.GrpcEvents = make(chan *protobuf.APIEvent, 10240) // output for gRPC exporter
+	m.HttpEvents = make(chan *protobuf.APIEvent, 10240) // output for HTTP exporter
 
 	if m.areK8sReceivers(cfg) {
 		k8sClient, err := k8s.NewClient(registerAndGetScheme(), kubeConfig)
@@ -86,8 +99,19 @@ func (m *Manager) run(cfg *config.Config, kubeConfig string) {
 		return
 	}
 
-	if err := exporter.Init(m.Ctx, m.GrpcServer, cfg, m.ApiEvents, m.Wg); err != nil {
+	m.Wg.Add(1)
+	go func() {
+		defer m.Wg.Done()
+		fanOutAPIEvents(m.Ctx, m.Logger.Named("fanout"), m.ApiEvents, m.GrpcEvents, m.HttpEvents)
+	}()
+
+	if err := exporter.InitGRPCExporter(m.Ctx, m.GrpcServer, cfg, m.GrpcEvents, m.Wg); err != nil {
 		m.Logger.Errorf("failed to initialize exporter: %v", err)
+		return
+	}
+
+	if err := exporter.InitHTTPExporter(m.Ctx, cfg, m.HttpEvents, m.Wg); err != nil {
+		m.Logger.Errorf("failed to initialize http exporter: %v", err)
 		return
 	}
 
@@ -108,6 +132,8 @@ func (m *Manager) run(cfg *config.Config, kubeConfig string) {
 			m.stopServers()
 			m.Wg.Wait()
 			close(m.ApiEvents)
+			close(m.GrpcEvents)
+			close(m.HttpEvents)
 			close(m.configChan)
 			m.Logger.Info("All workers finished. Stopped SentryFlow")
 			return
@@ -184,4 +210,50 @@ func Run(configFilePath string, kubeConfig string, logger *zap.SugaredLogger) {
 	mgr.watchConfig(configFilePath, logger)
 
 	mgr.run(cfg, kubeConfig)
+}
+
+func fanOutAPIEvents(ctx context.Context, logger *zap.SugaredLogger, in <-chan *protobuf.APIEvent, grpcOut chan<- *protobuf.APIEvent, httpOut chan<- *protobuf.APIEvent) {
+	stats := &fanoutStats{}
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Infow("fanout stopped",
+				"in", atomic.LoadUint64(&stats.inCount),
+				"grpcDropped", atomic.LoadUint64(&stats.grpcDrop),
+				"httpDropped", atomic.LoadUint64(&stats.httpDrop),
+			)
+			return
+
+		case <-ticker.C:
+			logger.Infow("fanout stats",
+				"in", atomic.LoadUint64(&stats.inCount),
+				"grpcDropped", atomic.LoadUint64(&stats.grpcDrop),
+				"httpDropped", atomic.LoadUint64(&stats.httpDrop),
+			)
+
+		case ev, ok := <-in:
+			if !ok {
+				logger.Warn("fanout input channel closed")
+				return
+			}
+			atomic.AddUint64(&stats.inCount, 1)
+
+			// Non-blocking send to gRPC exporter
+			select {
+			case grpcOut <- ev:
+			default:
+				atomic.AddUint64(&stats.grpcDrop, 1)
+			}
+
+			// Non-blocking send to HTTP exporter
+			select {
+			case httpOut <- ev:
+			default:
+				atomic.AddUint64(&stats.httpDrop, 1)
+			}
+		}
+	}
 }

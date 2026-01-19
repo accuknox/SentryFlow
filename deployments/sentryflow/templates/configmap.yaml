@@ -66,3 +66,20 @@ data:
     exporter:
       grpc:
         port: {{ .Values.config.grpcPort | default 8080 }}
+
+      http:
+        enabled: {{ .Values.config.httpExporter.enabled | default false }}
+        timeoutSeconds: {{ .Values.config.httpExporter.timeoutSeconds | default 5 }}
+        webhooks:
+          - name: {{ .Values.config.httpExporter.webhook.name }}
+            url: {{ .Values.config.httpExporter.webhook.url }}
+            method: {{ .Values.config.httpExporter.webhook.method | default "POST" }}
+            headers:
+              {{- range $key, $value := .Values.config.httpExporter.webhook.headers }}
+              {{ $key }}: {{ $value }}
+              {{- end }}
+            tls:
+              caCertPath: {{ .Values.config.httpExporter.webhook.tls.caCertPath }}
+              clientCertPath: {{ .Values.config.httpExporter.webhook.tls.clientCertPath }}
+              clientKeyPath: {{ .Values.config.httpExporter.webhook.tls.clientKeyPath }}
+              insecureSkipVerify: {{ .Values.config.httpExporter.webhook.tls.insecureSkipVerify | default false }}  

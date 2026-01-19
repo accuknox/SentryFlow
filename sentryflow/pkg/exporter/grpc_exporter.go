@@ -24,7 +24,7 @@ type clientList struct {
 	client map[string]chan *protobuf.APIEvent
 }
 
-type exporter struct {
+type grpcExporter struct {
 	protobuf.UnimplementedSentryFlowServer
 	apiEvents chan *protobuf.APIEvent
 	logger    *zap.SugaredLogger
@@ -35,7 +35,7 @@ type exporter struct {
 // assigned a unique identifier (UID) and a dedicated channel to receive events.
 // This ensures that all connected clients receive the same API events in
 // real-time.
-func (e *exporter) GetAPIEvent(clientInfo *protobuf.ClientInfo, stream grpc.ServerStreamingServer[protobuf.APIEvent]) error {
+func (e *grpcExporter) GetAPIEvent(clientInfo *protobuf.ClientInfo, stream grpc.ServerStreamingServer[protobuf.APIEvent]) error {
 	uid := uuid.Must(uuid.NewRandom()).String()
 
 	connChan := e.addClientToList(uid)
@@ -65,7 +65,7 @@ func (e *exporter) GetAPIEvent(clientInfo *protobuf.ClientInfo, stream grpc.Serv
 	}
 }
 
-func (e *exporter) addClientToList(uid string) chan *protobuf.APIEvent {
+func (e *grpcExporter) addClientToList(uid string) chan *protobuf.APIEvent {
 	e.clients.Lock()
 	connChan := make(chan *protobuf.APIEvent, 1000)
 	e.clients.client[uid] = connChan
@@ -73,7 +73,7 @@ func (e *exporter) addClientToList(uid string) chan *protobuf.APIEvent {
 	return connChan
 }
 
-func (e *exporter) deleteClientFromList(uid string, connChan chan *protobuf.APIEvent) {
+func (e *grpcExporter) deleteClientFromList(uid string, connChan chan *protobuf.APIEvent) {
 	e.clients.Lock()
 	close(connChan)
 	delete(e.clients.client, uid)
@@ -82,7 +82,7 @@ func (e *exporter) deleteClientFromList(uid string, connChan chan *protobuf.APIE
 
 // SendAPIEvent ingests an API event received from the source and publishes it to
 // the `apiEvents` channel for subscribed clients to consume.
-func (e *exporter) SendAPIEvent(ctx context.Context, apiEvent *protobuf.APIEvent) (*protobuf.APIEvent, error) {
+func (e *grpcExporter) SendAPIEvent(ctx context.Context, apiEvent *protobuf.APIEvent) (*protobuf.APIEvent, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -96,7 +96,7 @@ func (e *exporter) SendAPIEvent(ctx context.Context, apiEvent *protobuf.APIEvent
 // putApiEventOnClientsChannel continuously listens to the `apiEvents` channel
 // and forwards incoming API events to all connected clients. If the context is
 // canceled, the function returns.
-func (e *exporter) putApiEventOnClientsChannel(ctx context.Context) {
+func (e *grpcExporter) putApiEventOnClientsChannel(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -122,14 +122,14 @@ func (e *exporter) putApiEventOnClientsChannel(ctx context.Context) {
 	}
 }
 
-// Init initializes and registers the gRPC-based exporter with the provided
+// InitGRPCExporter initializes and registers the gRPC-based exporter with the provided
 // server. This allows clients to connect and consume the generated API events
 // streamed through the server.
-func Init(ctx context.Context, server *grpc.Server, cfg *config.Config, events chan *protobuf.APIEvent, wg *sync.WaitGroup) error {
-	logger := util.LoggerFromCtx(ctx).Named("exporter")
-	logger.Info("Starting exporter")
+func InitGRPCExporter(ctx context.Context, server *grpc.Server, cfg *config.Config, events chan *protobuf.APIEvent, wg *sync.WaitGroup) error {
+	logger := util.LoggerFromCtx(ctx).Named("grpc-exporter")
+	logger.Info("Starting grpc exporter")
 
-	e := &exporter{
+	e := &grpcExporter{
 		apiEvents: events,
 		logger:    logger,
 		clients: &clientList{

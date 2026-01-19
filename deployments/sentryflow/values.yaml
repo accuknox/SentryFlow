@@ -120,6 +120,20 @@ config:
         httpEndpoint: "http://sentryflow.sentryflow:8081/api/v1/events"
         timeout: 10000
         keepalive: 60000
+  httpExporter:
+    enabled: false
+    timeoutSeconds: 5
+    webhook:
+      name: ""
+      url: ""
+      method: "POST"
+      headers: {}
+      tls:
+        caCertPath: ""
+        clientCertPath: ""
+        clientKeyPath: ""
+        insecureSkipVerify: false
+            
 volumes:
   - name: sentryflow
     configMap:
