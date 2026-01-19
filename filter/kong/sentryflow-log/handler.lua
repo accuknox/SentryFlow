@@ -55,8 +55,20 @@ local function build_sentryflow_event()
   local response = kong.response
   local service_response = kong.service.response
 
+  local function flatten_headers(headers)
+    local flat_headers = {}
+    for k, v in pairs(headers) do
+      if type(v) == "table" then
+        flat_headers[k] = table.concat(v, ", ")
+      else
+        flat_headers[k] = tostring(v)
+      end
+    end
+    return flat_headers
+  end
+
   -- Request headers
-  local req_headers = request.get_headers() or {}
+  local req_headers = flatten_headers(request.get_headers() or {})
   -- Add pseudo-headers for compatibility
   req_headers[":scheme"] = var.scheme or "http"
   req_headers[":path"] = request.get_path() or ""
@@ -64,8 +76,12 @@ local function build_sentryflow_event()
   req_headers[":authority"] = request.get_host() or ""
 
   -- Response headers
-  local res_headers = response.get_headers() or {}
+  local res_headers = flatten_headers(response.get_headers() or {})
   res_headers[":status"] = tostring(response.get_status() or 0)
+
+  -- Retrieve captured bodies from context
+  local req_body = ctx.sentryflow_req_body or ""
+  local res_body = ctx.sentryflow_res_body or ""
 
   -- Build APIEvent matching SentryFlow protobuf schema
   local api_event = {
@@ -84,11 +100,11 @@ local function build_sentryflow_event()
     },
     request = {
       headers = req_headers,
-      body = kong.request.get_raw_body(),
+      body = req_body, 
     },
     response = {
       headers = res_headers,
-      body = kong.service.response.get_raw_body(),
+      body = res_body,
     },
     protocol = var.server_protocol or "",
   }
@@ -147,6 +163,38 @@ local function make_queue_name(conf)
 end
 
 
+function SentryFlowLogHandler:access(conf)
+  ngx.req.read_body()
+  local body = kong.request.get_raw_body()
+  if body then
+    if #body > 1048576 then -- 1MB Limit
+        body = string.sub(body, 1, 1048576)
+    end
+    ngx.ctx.sentryflow_req_body = body
+  end
+end
+
+function SentryFlowLogHandler:body_filter(conf)
+  local chunk, eof = ngx.arg[1], ngx.arg[2]
+  local ctx = ngx.ctx
+
+  if not ctx.sentryflow_res_body then
+      ctx.sentryflow_res_body = ""
+  end
+
+  if chunk then
+      local current_len = #ctx.sentryflow_res_body
+      if current_len < 1048576 then -- 1MB limit
+            local allowed = 1048576 - current_len
+            if #chunk > allowed then
+                ctx.sentryflow_res_body = ctx.sentryflow_res_body .. string.sub(chunk, 1, allowed)
+            else
+                ctx.sentryflow_res_body = ctx.sentryflow_res_body .. chunk
+            end
+      end
+  end
+end
+
 function SentryFlowLogHandler:log(conf)
   local api_event = build_sentryflow_event()
   local payload = cjson.encode(api_event)
@@ -164,6 +212,5 @@ function SentryFlowLogHandler:log(conf)
     kong.log.err("Failed to enqueue log entry to SentryFlow: ", err)
   end
 end
-
 
 return SentryFlowLogHandler

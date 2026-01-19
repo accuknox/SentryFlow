@@ -78,7 +78,8 @@ func (m *Manager) eventsHandler(writer http.ResponseWriter, request *http.Reques
 		return
 	}
 
-	m.Logger.Debugf("Received API Event from %s", apiEvent.Metadata.ReceiverName)
+	m.Logger.Debugf("Received API Event from %s. Request Body: %s, Response Body: %s",
+		apiEvent.Metadata.ReceiverName, apiEvent.Request.Body, apiEvent.Response.Body)
 	m.ApiEvents <- apiEvent
 	writer.WriteHeader(http.StatusAccepted)
 }
