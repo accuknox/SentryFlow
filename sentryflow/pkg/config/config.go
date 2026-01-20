@@ -81,6 +81,15 @@ type Config struct {
 	Filters   *filters        `json:"filters"`
 	Receivers *receivers      `json:"receivers"`
 	Exporter  *ExporterConfig `json:"exporter"`
+	Featuers  *Features       `json:"features"`
+}
+
+type Features struct {
+	RateLimiting RateLimitingConfig `json:"rateLimit"`
+}
+
+type RateLimitingConfig struct {
+	Enabled bool `json:"enabled"`
 }
 
 func (c *Config) validate() error {
