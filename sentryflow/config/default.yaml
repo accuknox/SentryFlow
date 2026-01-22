@@ -35,6 +35,9 @@ receivers: # aka sources
 #   
 #    - name: aws-api-gateway
 
+#    - name: kong-gateway
+#      namespace: kong
+
 exporter:
   grpc:
     port: 8080
