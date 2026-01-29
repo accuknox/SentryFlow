@@ -112,6 +112,14 @@ config:
     awsApigw:
       enabled: false
 
+    kongGateway:
+      enabled: false
+      deploymentName: "kong-kong"
+      namespace: "kong"
+      plugin:
+        httpEndpoint: "http://sentryflow.sentryflow:8081/api/v1/events"
+        timeout: 10000
+        keepalive: 60000
   httpExporter:
     enabled: false
     timeoutSeconds: 5
