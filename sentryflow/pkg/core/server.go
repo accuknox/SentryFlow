@@ -12,9 +12,8 @@ import (
 	"net/http"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
-
 	protobuf "github.com/accuknox/SentryFlow/protobuf/golang"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (m *Manager) startGrpcServer(port uint16) {

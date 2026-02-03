@@ -8,20 +8,21 @@ import (
 	"fmt"
 	"sync"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"github.com/accuknox/SentryFlow/protobuf/golang"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/config"
+	f5 "github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/other/f5-big-ip"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/other/konggateway"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/other/nginx/nginxinc"
 	istiogateway "github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/svcmesh/istio/gateway"
 	istiosidecar "github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/svcmesh/istio/sidecar"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Init initializes the API event sources based on the provided configuration. It
 // starts monitoring from configured sources and supports adding other sources in
 // the future.
-func Init(ctx context.Context, k8sClient client.Client, cfg *config.Config, wg *sync.WaitGroup, lock *sync.Mutex) error {
+func Init(ctx context.Context, k8sClient client.Client, cfg *config.Config, wg *sync.WaitGroup, lock *sync.Mutex, apiEvents chan *golang.APIEvent) error {
 	logger := util.LoggerFromCtx(ctx).Named("receiver")
 
 	for _, serviceMesh := range cfg.Receivers.ServiceMeshes {
@@ -65,6 +66,12 @@ func Init(ctx context.Context, k8sClient client.Client, cfg *config.Config, wg *
 				go func() {
 					defer wg.Done()
 					konggateway.Start(ctx, cfg, k8sClient)
+				}()
+			case util.F5BigIp:
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					f5.Start(ctx, cfg.Filters.TCPServer.Port, apiEvents)
 				}()
 			default:
 				return fmt.Errorf("unsupported receiver, %v", other.Name)

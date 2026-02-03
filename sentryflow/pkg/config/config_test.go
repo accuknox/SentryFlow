@@ -81,8 +81,8 @@ func TestConfig_validate(t *testing.T) {
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -107,8 +107,8 @@ func TestConfig_validate(t *testing.T) {
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -135,8 +135,8 @@ func TestConfig_validate(t *testing.T) {
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -163,8 +163,8 @@ func TestConfig_validate(t *testing.T) {
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: nil,
@@ -182,8 +182,8 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: &filters{
 					Envoy: nil,
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -212,8 +212,8 @@ func TestConfig_validate(t *testing.T) {
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -241,8 +241,8 @@ func TestConfig_validate(t *testing.T) {
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -270,8 +270,8 @@ func TestConfig_validate(t *testing.T) {
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
-					Server: &server{
-						Port: SentryFlowDefaultFilterServerPort,
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
 					},
 				},
 				Receivers: &receivers{
@@ -341,7 +341,7 @@ func TestNew(t *testing.T) {
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
-					Server: &server{
+					HttpServer: &server{
 						Port: 8081,
 					},
 				},
@@ -387,7 +387,7 @@ func TestNew(t *testing.T) {
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
-					Server: &server{
+					HttpServer: &server{
 						Port: 8081,
 					},
 				},
@@ -420,7 +420,7 @@ func TestNew(t *testing.T) {
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
-					Server: &server{
+					HttpServer: &server{
 						Port: 8081,
 					},
 				},

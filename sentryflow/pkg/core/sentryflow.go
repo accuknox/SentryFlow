@@ -90,11 +90,11 @@ func (m *Manager) run(cfg *config.Config, kubeConfig string) {
 	m.Wg.Add(1)
 	go func() {
 		defer m.Wg.Done()
-		m.startHttpServer(cfg.Filters.Server.Port)
+		m.startHttpServer(cfg.Filters.HttpServer.Port)
 	}()
 
 	m.receiversCtx, m.receiversCancelFunc = m.setupSignalHandler(make(chan os.Signal, 2))
-	if err := receiver.Init(m.receiversCtx, m.K8sClient, cfg, m.Wg, m.receiversLock); err != nil {
+	if err := receiver.Init(m.receiversCtx, m.K8sClient, cfg, m.Wg, m.receiversLock, m.ApiEvents); err != nil {
 		m.Logger.Errorf("failed to initialize receiver: %v", err)
 		return
 	}
@@ -149,7 +149,7 @@ func (m *Manager) run(cfg *config.Config, kubeConfig string) {
 				m.K8sClient = k8sClient
 			}
 			m.receiversCtx, m.receiversCancelFunc = m.setupSignalHandler(make(chan os.Signal, 2))
-			if err := receiver.Init(m.receiversCtx, m.K8sClient, updatedConfig, m.Wg, m.receiversLock); err != nil {
+			if err := receiver.Init(m.receiversCtx, m.K8sClient, updatedConfig, m.Wg, m.receiversLock, m.ApiEvents); err != nil {
 				m.Logger.Errorf("failed to initialize receiver: %v", err)
 				return
 			}

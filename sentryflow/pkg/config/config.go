@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	DefaultConfigFilePath             = "config/default.yaml"
-	SentryFlowDefaultFilterServerPort = 8081
+	DefaultConfigFilePath           = "config/default.yaml"
+	SentryFlowDefaultHTTPServerPort = 8081
+	SentryFlowDefaultTCPServerPort  = 5000
 )
 
 type nameAndNamespace struct {
@@ -74,7 +75,8 @@ type filters struct {
 	Envoy        *envoyFilterConfig  `json:"envoy,omitempty"`
 	NginxIngress *nginxIngressConfig `json:"nginxIngress,omitempty"`
 	KongGateway  *kongGatewayConfig  `json:"kongGateway,omitempty"`
-	Server       *server             `json:"server,omitempty"`
+	HttpServer   *server             `json:"http-server,omitempty"`
+	TCPServer    *server             `json:"tcp-server,omitempty"`
 }
 
 type ExporterConfig struct {
@@ -166,12 +168,19 @@ func New(configFilePath string, logger *zap.SugaredLogger) (*Config, error) {
 		logger.Errorf("Failed to unmarshal config file: %v", err)
 		return nil, err
 	}
-	if config.Filters.Server == nil {
-		config.Filters.Server = &server{}
+	if config.Filters.HttpServer == nil {
+		config.Filters.HttpServer = &server{}
 	}
-	if config.Filters.Server.Port == 0 {
-		config.Filters.Server.Port = SentryFlowDefaultFilterServerPort
-		logger.Warnf("Using default SentryFlow filter server port %d", config.Filters.Server.Port)
+	if config.Filters.TCPServer == nil {
+		config.Filters.TCPServer = &server{}
+	}
+	if config.Filters.HttpServer.Port == 0 {
+		config.Filters.HttpServer.Port = SentryFlowDefaultHTTPServerPort
+		logger.Warnf("Using default SentryFlow http server port %d", config.Filters.HttpServer.Port)
+	}
+	if config.Filters.TCPServer.Port == 0 {
+		config.Filters.TCPServer.Port = SentryFlowDefaultTCPServerPort
+		logger.Warnf("Using default SentryFlow tcp server port %d", config.Filters.TCPServer.Port)
 	}
 
 	if err := config.validate(); err != nil {

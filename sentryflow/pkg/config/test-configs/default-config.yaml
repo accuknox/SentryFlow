@@ -2,7 +2,7 @@
 # Copyright 2024 Authors of SentryFlow
 
 filters:
-  server:
+  http-server:
     port: 8081
 
   envoy:
