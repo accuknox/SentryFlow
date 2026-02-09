@@ -31,7 +31,7 @@ func TestConfig_validate(t *testing.T) {
 			fields: fields{
 				Filters: nil,
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name:      "istio-sidecar",
 							Namespace: "istio-system",
@@ -56,7 +56,7 @@ func TestConfig_validate(t *testing.T) {
 					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name:      "istio-sidecar",
 							Namespace: "istio-system",
@@ -86,7 +86,7 @@ func TestConfig_validate(t *testing.T) {
 					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name:      "istio-sidecar",
 							Namespace: "istio-system",
@@ -112,7 +112,7 @@ func TestConfig_validate(t *testing.T) {
 					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name:      "istio-sidecar",
 							Namespace: "istio-system",
@@ -140,7 +140,7 @@ func TestConfig_validate(t *testing.T) {
 					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name:      "istio-sidecar",
 							Namespace: "istio-system",
@@ -187,7 +187,7 @@ func TestConfig_validate(t *testing.T) {
 					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name:      util.ServiceMeshIstioSidecar,
 							Namespace: "istio-system",
@@ -217,7 +217,7 @@ func TestConfig_validate(t *testing.T) {
 					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Namespace: "istio-system",
 						},
@@ -246,7 +246,7 @@ func TestConfig_validate(t *testing.T) {
 					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name: "istio-sidecar",
 						},
@@ -275,7 +275,7 @@ func TestConfig_validate(t *testing.T) {
 					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name:      "istio-sidecar",
 							Namespace: "istio-system",
@@ -336,20 +336,29 @@ func TestNew(t *testing.T) {
 			},
 			want: &Config{
 				Filters: &filters{
-					Envoy: &envoyFilterConfig{
-						Uri:        "classikh/sentryflow-httpfilter",
-						GatewayTag: "latest-gateway",
-						SidecarTag: "latest-sidecar",
-					},
 					HttpServer: &server{
 						Port: 8081,
 					},
+					Envoy: &envoyFilterConfig{
+						Uri:                     "public.ecr.aws/k9v9d5v2/sentryflow-httpfilter",
+						GatewayWithRatelimitTag: "latest-gateway-ratelimit",
+						SidecarTag:              "latest-sidecar",
+					},
+					TCPServer: &server{
+						Port: SentryFlowDefaultTCPServerPort,
+					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name:      "istio-gateway",
 							Namespace: "istio-system",
+							RateLimiting: rateLimitingConfigs{
+								Enabled: true,
+								Url:     DefaultRateLimitServiceURL,
+								Port:    DefaultRateLimitServicePort,
+								Path:    DefaultRateLimitServicePath,
+							},
 						},
 						{
 							Name:      "istio-sidecar",
@@ -383,16 +392,19 @@ func TestNew(t *testing.T) {
 			want: &Config{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri:        "classikh/sentryflow-httpfilter",
+						Uri:        "public.ecr.aws/k9v9d5v2/sentryflow-httpfilter",
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
 					HttpServer: &server{
-						Port: 8081,
+						Port: SentryFlowDefaultHTTPServerPort,
+					},
+					TCPServer: &server{
+						Port: SentryFlowDefaultTCPServerPort,
 					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name:      "istio-sidecar",
 							Namespace: "istio-system",
@@ -416,19 +428,101 @@ func TestNew(t *testing.T) {
 			want: &Config{
 				Filters: &filters{
 					Envoy: &envoyFilterConfig{
-						Uri:        "classikh/sentryflow-httpfilter",
+						Uri:        "public.ecr.aws/k9v9d5v2/sentryflow-httpfilter",
 						GatewayTag: "latest-gateway",
 						SidecarTag: "latest-sidecar",
 					},
 					HttpServer: &server{
-						Port: 8081,
+						Port: SentryFlowDefaultHTTPServerPort,
+					},
+					TCPServer: &server{
+						Port: SentryFlowDefaultTCPServerPort,
 					},
 				},
 				Receivers: &receivers{
-					ServiceMeshes: []*nameAndNamespace{
+					ServiceMeshes: []*meshConfig{
 						{
 							Name:      "istio-sidecar",
 							Namespace: "istio-system",
+						},
+					},
+				},
+				Exporter: &ExporterConfig{
+					Grpc: &server{
+						Port: 8080,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid istio-gateway with rate limiting set to true should return config with correct values",
+			args: args{
+				configFilePath: filepath.Join(".", "test-configs", "gateway-with-ratelimit.yaml"),
+				logger:         logger,
+			},
+			want: &Config{
+				Filters: &filters{
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
+					},
+					TCPServer: &server{
+						Port: SentryFlowDefaultTCPServerPort,
+					},
+					Envoy: &envoyFilterConfig{
+						Uri:                     "public.ecr.aws/k9v9d5v2/sentryflow-httpfilter",
+						GatewayWithRatelimitTag: "latest-gateway-ratelimit",
+					},
+				},
+				Receivers: &receivers{
+					ServiceMeshes: []*meshConfig{
+						{
+							Name:      "istio-gateway",
+							Namespace: "istio-system",
+							RateLimiting: rateLimitingConfigs{
+								Enabled: true,
+								Url:     DefaultRateLimitServiceURL,
+								Port:    DefaultRateLimitServicePort,
+								Path:    DefaultRateLimitServicePath,
+							},
+						},
+					},
+				},
+				Exporter: &ExporterConfig{
+					Grpc: &server{
+						Port: 8080,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid istio-gateway with rate limiting set to false should return config with correct values",
+			args: args{
+				configFilePath: filepath.Join(".", "test-configs", "gateway-without-ratelimit.yaml"),
+				logger:         logger,
+			},
+			want: &Config{
+				Filters: &filters{
+					HttpServer: &server{
+						Port: SentryFlowDefaultHTTPServerPort,
+					},
+					TCPServer: &server{
+						Port: SentryFlowDefaultTCPServerPort,
+					},
+					Envoy: &envoyFilterConfig{
+						Uri:        "public.ecr.aws/k9v9d5v2/sentryflow-httpfilter",
+						GatewayTag: "latest-gateway",
+					},
+				},
+				Receivers: &receivers{
+					ServiceMeshes: []*meshConfig{
+						{
+							Name:      "istio-gateway",
+							Namespace: "istio-system",
+							RateLimiting: rateLimitingConfigs{
+								Enabled: false,
+							},
 						},
 					},
 				},

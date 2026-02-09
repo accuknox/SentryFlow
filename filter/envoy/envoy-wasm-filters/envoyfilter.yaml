@@ -27,3 +27,21 @@ spec:
                           protocol: TCP
           name: sentryflow
           type: LOGICAL_DNS
+    - applyTo: CLUSTER
+      patch:
+        operation: ADD
+        value:
+          name: security-gatekeeper
+          type: LOGICAL_DNS
+          connect_timeout: 0.5s # Keep it short for rate limiting!
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: security-gatekeeper
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          protocol: TCP
+                          address: security-gatekeeper.default
+                          port_value: 8082

@@ -14,10 +14,23 @@ COPY . .
 RUN make toolchain
 
 # Build the plugin with appropriate feature flag
-RUN if [ "${PLUGIN_TYPE}" = "gateway" ]; then \
-        cargo build --target wasm32-wasip1 --release --no-default-features --features gateway; \
+RUN if [ "${PLUGIN_TYPE}" = "gateway-ratelimit" ]; then \
+        cargo build \
+          --target wasm32-wasip1 \
+          --release \
+          --no-default-features \
+          --features gateway,rate-limit; \
+    elif [ "${PLUGIN_TYPE}" = "gateway" ]; then \
+        cargo build \
+          --target wasm32-wasip1 \
+          --release \
+          --no-default-features \
+          --features gateway; \
     else \
-        cargo build --target wasm32-wasip1 --release --features sidecar; \
+        cargo build \
+          --target wasm32-wasip1 \
+          --release \
+          --features sidecar; \
     fi
 
 FROM scratch

@@ -25,6 +25,10 @@ build-sidecar: ## Build sidecar plugin (default)
 build-gateway: ## Build gateway plugin
 	@cargo build --target wasm32-wasip1 --release --no-default-features --features gateway
 
+.PHONY: build-gateway-ratelimit
+build-gateway-ratelimit: ## Build gateway plugin with rate limit feature
+	@cargo build --target wasm32-wasip1 --release --no-default-features --features "gateway rate-limit"
+
 .PHONY: build
 build: build-sidecar ## Build plugin (alias for build-sidecar)
 
@@ -40,6 +44,10 @@ image-sidecar:
 image-gateway: 
 	$(CONTAINER_TOOL) build --build-arg PLUGIN_TYPE=gateway -t ${DOCKER_IMAGE}:${DOCKER_TAG}-gateway .
 
+.PHONY: image-gateway-ratelimit
+image-gateway-ratelimit: 
+	$(CONTAINER_TOOL) build --build-arg PLUGIN_TYPE=gateway-ratelimit -t ${DOCKER_IMAGE}:${DOCKER_TAG}-gateway-ratelimit .
+
 .PHONY: push-sidecar
 push-sidecar: ## Push sidecar container image
 	$(CONTAINER_TOOL) push ${DOCKER_IMAGE}:${DOCKER_TAG}-sidecar
@@ -48,11 +56,15 @@ push-sidecar: ## Push sidecar container image
 push-gateway: ## Push gateway container image
 	$(CONTAINER_TOOL) push ${DOCKER_IMAGE}:${DOCKER_TAG}-gateway
 
+.PHONY: push-gateway-ratelimit
+push-gateway-ratelimit: ## Push gateway container image with rate limit feature
+	$(CONTAINER_TOOL) push ${DOCKER_IMAGE}:${DOCKER_TAG}-gateway-ratelimit
+
 .PHONY: all
-all: image-sidecar image-gateway ## Build both sidecar and gateway images
+all: image-sidecar image-gateway image-gateway-ratelimit ## Build both sidecar, gateway, and gateway-ratelimit images
 
 .PHONY: image
 all: image-sidecar ## By default we make image for sidecar 
 
 .PHONY: push-all
-push-all: push-sidecar push-gateway ## Push both images
+push-all: push-sidecar push-gateway push-gateway-ratelimit ## Push all images

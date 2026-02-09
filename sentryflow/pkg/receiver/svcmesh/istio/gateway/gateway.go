@@ -28,9 +28,11 @@ import (
 )
 
 const (
-	FilterName             = "http-filter-gateway"
-	UpstreamAndClusterName = "sentryflow"
-	ApiPath                = "/api/v1/events"
+	FilterName                 = "http-filter-gateway"
+	UpstreamAndClusterName     = "sentryflow"
+	ApiPath                    = "/api/v1/events"
+	AuthUpstreamAndClusterName = "security-gatekeeper"
+	AuthPath                   = "/allowed"
 )
 
 type envoyFilterData struct {
@@ -38,6 +40,10 @@ type envoyFilterData struct {
 	IstioRootNs                string
 	UpstreamAndClusterName     string
 	SentryFlowFilterServerPort uint16
+	AuthUpstreamAndClusterName string
+	AuthServiceURL             string
+	AuthServicePort            uint16
+	EnableRateLimiting         bool
 }
 
 // StartMonitoring begins monitoring API calls within the Istio gateway
@@ -90,6 +96,11 @@ func doCleanup(logger *zap.SugaredLogger, k8sClient client.Client, istioRootNs s
 func createWasmPlugin(ctx context.Context, cfg *config.Config, k8sClient client.Client) error {
 	logger := util.LoggerFromCtx(ctx)
 
+	tag := cfg.Filters.Envoy.GatewayTag
+	if cfg.Filters.Envoy.GatewayWithRatelimitTag != "" {
+		tag = cfg.Filters.Envoy.GatewayWithRatelimitTag
+	}
+
 	wasmPlugin := &v1alpha1.WasmPlugin{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "WasmPlugin",
@@ -103,7 +114,7 @@ func createWasmPlugin(ctx context.Context, cfg *config.Config, k8sClient client.
 			},
 		},
 		Spec: extensionsv1alpha1.WasmPlugin{
-			Url: fmt.Sprintf("%s:%s", cfg.Filters.Envoy.Uri, cfg.Filters.Envoy.GatewayTag),
+			Url: fmt.Sprintf("%s:%s", cfg.Filters.Envoy.Uri, tag),
 			Selector: &v1beta1.WorkloadSelector{
 				MatchLabels: client.MatchingLabels{
 					"istio": "ingressgateway",
@@ -131,6 +142,28 @@ func createWasmPlugin(ctx context.Context, cfg *config.Config, k8sClient client.
 			},
 			FailStrategy: extensionsv1alpha1.FailStrategy_FAIL_OPEN,
 		},
+	}
+
+	for _, svcMesh := range cfg.Receivers.ServiceMeshes {
+		if svcMesh.Name == util.ServiceMeshIstioGateway {
+			if svcMesh.RateLimiting.Enabled {
+				wasmPlugin.Spec.PluginConfig.Fields["auth_upstream"] = &_struct.Value{
+					Kind: &_struct.Value_StringValue{
+						StringValue: AuthUpstreamAndClusterName,
+					},
+				}
+				wasmPlugin.Spec.PluginConfig.Fields["auth_authority"] = &_struct.Value{
+					Kind: &_struct.Value_StringValue{
+						StringValue: AuthUpstreamAndClusterName,
+					},
+				}
+				wasmPlugin.Spec.PluginConfig.Fields["auth_path"] = &_struct.Value{
+					Kind: &_struct.Value_StringValue{
+						StringValue: svcMesh.RateLimiting.Path,
+					},
+				}
+			}
+		}
 	}
 
 	existingWasmPlugin := &v1alpha1.WasmPlugin{}
@@ -202,6 +235,26 @@ spec:
                           protocol: TCP
                           address: {{ .UpstreamAndClusterName }}.{{ .UpstreamAndClusterName }}
                           port_value: {{ .SentryFlowFilterServerPort }}
+	{{- if .EnableRateLimiting }}
+    - applyTo: CLUSTER
+      patch:
+        operation: ADD
+        value:
+          name: {{ .AuthUpstreamAndClusterName }}
+          type: LOGICAL_DNS
+          connect_timeout: 0.5s 
+          lb_policy: ROUND_ROBIN
+          load_assignment:
+            cluster_name: {{ .AuthUpstreamAndClusterName }}
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address:
+                          protocol: TCP
+                          address: {{ .AuthServiceURL }}
+                          port_value: {{ .AuthServicePort }}
+	{{- end }}
 `
 
 	data := envoyFilterData{
@@ -209,6 +262,17 @@ spec:
 		IstioRootNs:                getIstioRootNamespaceFromConfig(cfg),
 		UpstreamAndClusterName:     UpstreamAndClusterName,
 		SentryFlowFilterServerPort: cfg.Filters.HttpServer.Port,
+	}
+
+	for _, svcMesh := range cfg.Receivers.ServiceMeshes {
+		if svcMesh.Name == util.ServiceMeshIstioGateway {
+			if svcMesh.RateLimiting.Enabled {
+				data.EnableRateLimiting = true
+				data.AuthServiceURL = svcMesh.RateLimiting.Url
+				data.AuthServicePort = svcMesh.RateLimiting.Port
+				data.AuthUpstreamAndClusterName = AuthUpstreamAndClusterName
+			}
+		}
 	}
 
 	tmpl, err := template.New("envoyHttpFilter").Parse(httpFilter)

@@ -18,6 +18,7 @@ log = "0.4"
 default = ["sidecar"]
 sidecar = []
 gateway = []
+rate-limit = []
 
 [profile.release]
 opt-level = "s"      # Optimize for size (WASM modules should be small)

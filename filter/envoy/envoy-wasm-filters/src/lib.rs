@@ -1,4 +1,4 @@
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use proxy_wasm::traits::{Context, HttpContext, RootContext};
 use proxy_wasm::types::{Action, ContextType, LogLevel};
 use serde::{Deserialize, Serialize};
@@ -6,12 +6,15 @@ use std::collections::HashMap;
 use std::time::{Duration, UNIX_EPOCH};
 
 const HEADER_X_SENTRYFLOW_TLS_VERSION: &str = "x-sentryflow-tls-version";
+const MAX_BODY_SIZE: usize = 1_000_000; // 1 MB
+
 
 #[derive(Default)]
 struct Plugin {
     _context_id: u32,
     config: PluginConfig,
     api_event: APIEvent,
+    auth_token_id: u32,
 }
 
 #[derive(Deserialize, Clone, Default, Debug)]
@@ -19,6 +22,22 @@ struct PluginConfig {
     upstream_name: String,
     api_path: String,
     authority: String,
+    #[cfg(feature = "rate-limit")]
+    auth_upstream: String,
+    #[cfg(feature = "rate-limit")]
+    auth_authority: String,
+    #[cfg(feature = "rate-limit")]
+    auth_path: String,
+}
+
+#[derive(Serialize, Default, Clone)]
+#[cfg(feature = "rate-limit")]
+struct AuthRequest {
+    id: String,
+    source: String,
+    method: String,
+    path: String,
+    headers: HashMap<String, String>,
 }
 
 #[derive(Serialize, Default, Clone)]
@@ -60,7 +79,6 @@ struct Response {
     backend_latency_in_nanos: u64,
 }
 
-const MAX_BODY_SIZE: usize = 1_000_000; // 1 MB
 
 fn _start() {
     proxy_wasm::main! {{
@@ -69,7 +87,87 @@ fn _start() {
     }}
 }
 
+#[cfg(feature = "rate-limit")]
+impl Plugin {
+    /// Dispatches the AuthRequest to the external Rate Limiter
+    fn check_rate_limit(&mut self) -> Action {
+        let auth_request = AuthRequest {
+            id: self._context_id.to_string(),
+            source: self.api_event.source.ip.clone(),
+            method: self.api_event.request.headers.get(":method").cloned().unwrap_or_default(),
+            path: self.api_event.request.headers.get(":path").cloned().unwrap_or_default(),
+            headers: self.api_event.request.headers.clone(),
+        };
+
+        let body = match serde_json::to_vec(&auth_request) {
+            Ok(b) => b,
+            Err(e) => {
+                error!("Failed to serialize AuthRequest: {:?}", e);
+                return Action::Continue;
+            }
+        };
+
+        let dispatch_headers = vec![
+            (":method", "POST"),
+            (":authority", &self.config.auth_authority),
+            (":path", &self.config.auth_path),
+            ("content-type", "application/json"),
+        ];  
+
+        match self.dispatch_http_call(
+            &self.config.auth_upstream,
+            dispatch_headers,
+            Some(&body),
+            vec![],
+            Duration::from_millis(500),
+        ) {
+            Ok(token_id) => {
+                self.auth_token_id = token_id;
+                Action::Pause 
+            }
+            Err(e) => {
+                error!("Auth dispatch failed: {:?}", e);
+                Action::Continue 
+            }
+        }
+    }
+}
+
 impl Context for Plugin {
+    fn on_http_call_response(&mut self, token_id: u32, _num_headers: usize, _body_size: usize, _num_trailers: usize) {
+        if token_id != self.auth_token_id {
+            return;
+        }
+        let headers = self.get_http_call_response_headers_bytes();
+        if headers.is_empty() {
+            warn!("Rate limiter returned no headers. Resuming anyway.");
+            self.resume_http_request();
+            return;
+        }
+        let status = headers.iter()
+            .find(|(k, _)| k.to_lowercase() == ":status")
+            .map(|(_, v)| String::from_utf8_lossy(v).into_owned())
+            .unwrap_or_else(|| "500".to_string());
+
+        if status == "429" {
+            // STRICT BLOCK: Only if explicitly rate limited
+            info!("Context {}: Rate limit EXCEEDED (429). Blocking.", self._context_id);
+            self.send_http_response(
+                429, 
+                vec![("content-type", "text/plain")],
+                Some(b"Rate limit exceeded."),
+            );
+        } else {
+            // PASS: For 200 OK, and FAIL-OPEN for anything else (500, 404, etc.)
+            if status != "200" {
+                // Log that we are passing even though the service didn't return 200
+                warn!("Context {}: Rate limiter returned unexpected status {}. Failing open.", self._context_id, status);
+            }
+            
+            // Unpause the user's request so it goes to the backend
+            self.resume_http_request();
+        }
+    }
     fn on_done(&mut self) -> bool {
         info!(
             "Context {} finished, dispatching telemetry",
@@ -100,6 +198,7 @@ impl RootContext for Plugin {
             _context_id,
             config: self.config.clone(),
             api_event: Default::default(),
+            auth_token_id: 0,
         }))
     }
 
@@ -191,6 +290,12 @@ impl HttpContext for Plugin {
 
         self.api_event.source.ip = src_ip;
         self.api_event.source.port = src_port;
+
+        // Perform the external rate limit check
+        #[cfg(feature = "rate-limit")]
+        {
+            return self.check_rate_limit();
+        }      
         Action::Continue
     }
 
@@ -394,4 +499,3 @@ fn get_url_and_port(address: String) -> (String, u16) {
         (String::new(), 0)
     }
 }
-

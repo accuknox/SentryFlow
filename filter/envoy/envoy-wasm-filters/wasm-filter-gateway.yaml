@@ -11,6 +11,9 @@ spec:
   priority: 100
   pluginConfig:
     upstream_name: sentryflow
+    auth_upstream: security-gatekeeper
+    auth_path: /allowed
     api_path: /api/v1/events
     authority: sentryflow
+    auth_authority: security-gatekeeper
   url: public.ecr.aws/k9v9d5v2/sentryflow-httpfilter:latest-gateway

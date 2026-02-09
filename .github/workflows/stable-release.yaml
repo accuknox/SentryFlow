@@ -57,9 +57,24 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
 
+  release-envoy-filter-gateway-ratelimit-image:
+    if: ${{ github.repository == 'accuknox/sentryflow' }}
+    name: Build and push envoy gateway filter image with rate limit feature
+    uses: ./.github/workflows/release-image.yaml
+    with:
+      WORKING_DIRECTORY: ./filter/envoy/envoy-wasm-filters
+      NAME: sentryflow-httpfilter
+      ECR_REPOSITORY: "public.ecr.aws/k9v9d5v2"
+      REGISTRY_TYPE: public
+      DOCKER_BUILD_ARGS: "--build-arg PLUGIN_TYPE=gateway-ratelimit"
+      IMAGE_TAG: "latest-gateway-ratelimit"
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+
   update-image-tags-in-helm-charts:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
-    needs: [ release-sentryflow-image, release-envoy-filter-gateway-image, release-envoy-filter-sidecar-image ]
+    needs: [ release-sentryflow-image, release-envoy-filter-gateway-image, release-envoy-filter-gateway-ratelimit-image, release-envoy-filter-sidecar-image ]
     permissions:
       pull-requests: write
       contents: write

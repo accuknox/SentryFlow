@@ -17,22 +17,34 @@ const (
 	DefaultConfigFilePath           = "config/default.yaml"
 	SentryFlowDefaultHTTPServerPort = 8081
 	SentryFlowDefaultTCPServerPort  = 5000
+	DefaultRateLimitServiceURL      = "security-gatekeeper.accuknox-api-security"
+	DefaultRateLimitServicePort     = uint16(8082)
+	DefaultRateLimitServicePath     = "/allowed"
 )
 
-type nameAndNamespace struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace,omitempty"`
+type meshConfig struct {
+	Name         string              `json:"name"`
+	Namespace    string              `json:"namespace,omitempty"`
+	RateLimiting rateLimitingConfigs `json:"rateLimiting,omitempty"`
+}
+
+type rateLimitingConfigs struct {
+	Enabled bool   `json:"enabled"`
+	Url     string `json:"url"`
+	Port    uint16 `json:"port"`
+	Path    string `json:"path"`
 }
 
 type receivers struct {
-	ServiceMeshes []*nameAndNamespace `json:"serviceMeshes,omitempty"`
-	Others        []*nameAndNamespace `json:"other,omitempty"`
+	ServiceMeshes []*meshConfig `json:"serviceMeshes,omitempty"`
+	Others        []*meshConfig `json:"other,omitempty"`
 }
 
 type envoyFilterConfig struct {
-	Uri        string `json:"uri"`
-	GatewayTag string `json:"gatewayTag"`
-	SidecarTag string `json:"sidecarTag"`
+	Uri                     string `json:"uri"`
+	GatewayTag              string `json:"gatewayTag"`
+	SidecarTag              string `json:"sidecarTag"`
+	GatewayWithRatelimitTag string `json:"gatewayWithRatelimitTag"`
 }
 
 type server struct {
@@ -75,8 +87,8 @@ type filters struct {
 	Envoy        *envoyFilterConfig  `json:"envoy,omitempty"`
 	NginxIngress *nginxIngressConfig `json:"nginxIngress,omitempty"`
 	KongGateway  *kongGatewayConfig  `json:"kongGateway,omitempty"`
-	HttpServer   *server             `json:"http-server,omitempty"`
-	TCPServer    *server             `json:"tcp-server,omitempty"`
+	HttpServer   *server             `json:"httpServer,omitempty"`
+	TCPServer    *server             `json:"tcpServer,omitempty"`
 }
 
 type ExporterConfig struct {
@@ -123,6 +135,29 @@ func (c *Config) validate() error {
 		}
 		if svcMesh.Name == util.ServiceMeshIstioSidecar && c.Filters.Envoy == nil {
 			return fmt.Errorf("no envoy filter configuration provided for istio sidecar servicemesh")
+		}
+		if svcMesh.Name == util.ServiceMeshIstioSidecar && c.Filters.Envoy.SidecarTag == "" {
+			return fmt.Errorf("no envoy sidecar tag provided for istio sidecar servicemesh")
+		}
+		if svcMesh.Name == util.ServiceMeshIstioGateway && c.Filters.Envoy == nil {
+			return fmt.Errorf("no envoy filter configuration provided for istio gateway servicemesh")
+		}
+		if svcMesh.Name == util.ServiceMeshIstioGateway && !svcMesh.RateLimiting.Enabled && c.Filters.Envoy.GatewayTag == "" {
+			return fmt.Errorf("no gatewayTag provided for istio gateway servicemesh")
+		}
+		if svcMesh.Name == util.ServiceMeshIstioGateway && svcMesh.RateLimiting.Enabled && c.Filters.Envoy.GatewayWithRatelimitTag == "" {
+			return fmt.Errorf("no gatewayWithRatelimitTag provided for istio gateway with rate limiting servicemesh")
+		}
+		if svcMesh.Name == util.ServiceMeshIstioGateway && svcMesh.RateLimiting.Enabled {
+			if svcMesh.RateLimiting.Url == "" {
+				svcMesh.RateLimiting.Url = DefaultRateLimitServiceURL
+			}
+			if svcMesh.RateLimiting.Port == 0 {
+				svcMesh.RateLimiting.Port = DefaultRateLimitServicePort
+			}
+			if svcMesh.RateLimiting.Path == "" {
+				svcMesh.RateLimiting.Path = DefaultRateLimitServicePath
+			}
 		}
 	}
 

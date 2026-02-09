@@ -176,7 +176,7 @@ func getWasmPlugin() *v1alpha1.WasmPlugin {
 			},
 		},
 		Spec: extensionsv1alpha1.WasmPlugin{
-			Url: fmt.Sprintf("%s:%s", cfg.Filters.Envoy.Uri, cfg.Filters.Envoy.GatewayTag),
+			Url: fmt.Sprintf("%s:%s", cfg.Filters.Envoy.Uri, cfg.Filters.Envoy.GatewayWithRatelimitTag),
 			Selector: &v1beta1.WorkloadSelector{
 				MatchLabels: map[string]string{
 					"istio": "ingressgateway",
@@ -197,6 +197,21 @@ func getWasmPlugin() *v1alpha1.WasmPlugin {
 					"api_path": {
 						Kind: &_struct.Value_StringValue{
 							StringValue: ApiPath,
+						},
+					},
+					"auth_upstream": {
+						Kind: &_struct.Value_StringValue{
+							StringValue: AuthUpstreamAndClusterName,
+						},
+					},
+					"auth_authority": {
+						Kind: &_struct.Value_StringValue{
+							StringValue: AuthUpstreamAndClusterName,
+						},
+					},
+					"auth_path": {
+						Kind: &_struct.Value_StringValue{
+							StringValue: AuthPath,
 						},
 					},
 				},
