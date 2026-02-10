@@ -66,6 +66,8 @@ jobs:
       REGISTRY_TYPE: public
       DOCKER_BUILD_ARGS: "--build-arg PLUGIN_TYPE=gateway"
       IMAGE_TAG: "latest-gateway"
+    secrets: inherit
+    
   release-envoy-filter-gateway-ratelimit-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push envoy gateway filter image with rate limit feature
