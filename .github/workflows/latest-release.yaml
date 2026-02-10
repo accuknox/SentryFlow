@@ -40,7 +40,9 @@ jobs:
     with:
       WORKING_DIRECTORY: ./sentryflow
       NAME: sentryflow
-    secrets: inherit
+    secrets: 
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
 
   release-envoy-filter-sidecar-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
@@ -53,7 +55,10 @@ jobs:
       REGISTRY_TYPE: public
       DOCKER_BUILD_ARGS: "--build-arg PLUGIN_TYPE=sidecar"
       IMAGE_TAG: "latest-sidecar"
-    secrets: inherit
+    secrets: 
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+
 
   release-envoy-filter-gateway-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
@@ -66,6 +71,11 @@ jobs:
       REGISTRY_TYPE: public
       DOCKER_BUILD_ARGS: "--build-arg PLUGIN_TYPE=gateway"
       IMAGE_TAG: "latest-gateway"
+    secrets: 
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+
+    
   release-envoy-filter-gateway-ratelimit-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push envoy gateway filter image with rate limit feature
@@ -77,4 +87,7 @@ jobs:
       REGISTRY_TYPE: public
       DOCKER_BUILD_ARGS: "--build-arg PLUGIN_TYPE=gateway-ratelimit"
       IMAGE_TAG: "latest-gateway-ratelimit"
-    secrets: inherit
+    secrets: 
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
+
