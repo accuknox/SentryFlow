@@ -36,6 +36,12 @@ on:
         required: false
         type: string
         default: ''
+      DOCKERFILE_PATH:
+        description: 'Dockerfile path'
+        required: true
+        type: string
+        default: ''
+        
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -78,7 +84,7 @@ jobs:
         uses: ./.github/actions/docker-build-scan-push
         with:
           docker_context: ${{ inputs.WORKING_DIRECTORY }}
-          dockerfile_path: ${{ inputs.WORKING_DIRECTORY }}/Dockerfile
+          dockerfile_path: ${{ inputs.DOCKERFILE_PATH }}
           image_name: ${{ inputs.NAME }}
           repository_name: ${{ inputs.ECR_REPOSITORY }}
           tag: ${{ steps.tag.outputs.tag }}
