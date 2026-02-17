@@ -18,11 +18,12 @@ jobs:
   release-sentryflow-image:
     if: ${{ github.repository == 'accuknox/sentryflow' }}
     name: Build and push sentryflow image
-    uses: accuknox/accuknox-jobs/.github/workflows/push-image.yaml@sentryflow-docker-push
+    uses: ./.github/workflows/release-image.yaml
     with:
-      DOCKER_CONTEXT: .
-      DOCKERFILE: ./sentryflow/Dockerfile
-      IMAGE_NAME: sentryflow
+      WORKING_DIRECTORY: ./
+      NAME: sentryflow
+      IMAGE_TAG: ${{ github.ref_name }}
+      DOCKERFILE_PATH: ./sentryflow/Dockerfile
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }}
