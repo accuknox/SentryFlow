@@ -10,8 +10,12 @@ metadata:
 data:
   config.yaml: |2-
     filters:
-      server:
+      httpServer: 
         port: {{ .Values.config.serverPort | default 8081 }}
+      {{- if .Values.config.receivers.f5BigIp.enabled }}
+      tcpServer: 
+        port: {{ .Values.config.tcpServerPort | default 5000 }}
+      {{- end }}
 
       {{- if .Values.config.receivers.nginxIngressController.enabled }}
       nginxIngress:
@@ -87,6 +91,11 @@ data:
       {{- if .Values.config.receivers.awsApigw.enabled }}
       others:
         - name: aws-api-gateway
+      {{- end }}
+
+      {{- if .Values.config.receivers.f5BigIp.enabled }}
+      others:
+        - name: f5-big-ip
       {{- end }}
 
     exporter:

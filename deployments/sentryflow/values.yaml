@@ -52,10 +52,15 @@ service:
       targetPort: 8080 # Make sure to use the same port as `.filters.server.port` field of `config`
       nodePort: 30880
       protocol: TCP
-    - name: receiver
+    - name: http-receiver
       port: 8081 # Make sure to use the same port as `.filters.server.port` field of `config`
       targetPort: 8081 # Make sure to use the same port as `.filters.server.port` field of `config`
       nodePort: 30001
+      protocol: TCP
+    - name: tcp-receiver
+      port: 5000 
+      targetPort: 5000 
+      nodePort: 30002
       protocol: TCP
 resources:
   limits:
@@ -89,6 +94,7 @@ autoscaling:
 # Traffic sources configuration
 config:
   serverPort: 8081
+  tcpServerPort: 5000
   grpcPort: 8080
 
   receivers:
@@ -117,6 +123,9 @@ config:
       enabled: false
 
     awsApigw:
+      enabled: false
+
+    f5BigIp:
       enabled: false
 
     kongGateway:

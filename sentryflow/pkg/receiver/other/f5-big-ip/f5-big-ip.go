@@ -32,7 +32,7 @@ var logger *zap.SugaredLogger
 
 func Start(ctx context.Context, port uint16, apiEventsChan chan *pb.APIEvent) {
 	logger := util.LoggerFromCtx(ctx)
-	listener, err := net.Listen("TCP", fmt.Sprintf(":%d", port))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		logger.Errorf("error starting TCP server: %v", err)
 		return
