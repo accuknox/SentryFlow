@@ -32,11 +32,14 @@ Deploy SentryFlow with Kong receiver enabled. This creates the `sentryflow-log-p
 
 > **Note:** This step may show a warning about the `KongClusterPlugin` failing validation - this is expected because Kong hasn't loaded the plugin yet. SentryFlow itself and the ConfigMap will still be created.
 
+> **Note:** Minimun Required Version for SentryFlow Kong integration is `v0.1.8`. Please check SentryFlow [release](https://github.com/accuknox/SentryFlow/releases) Page to install latest version. 
+
 ```shell
 helm upgrade --install sentryflow \
   oci://public.ecr.aws/k9v9d5v2/sentryflow-helm-charts \
   --namespace sentryflow \
   --create-namespace \
+  --version v0.1.8 \
   --set config.receivers.kongGateway.enabled=true \
   --set config.receivers.kongGateway.namespace=kong \
   --set config.receivers.kongGateway.deploymentName=kong-kong \
@@ -104,6 +107,7 @@ helm upgrade --install sentryflow \
   oci://public.ecr.aws/k9v9d5v2/sentryflow-helm-charts \
   --namespace sentryflow \
   --create-namespace \
+  --version v0.1.8 \
   --set config.receivers.kongGateway.enabled=true \
   --set config.receivers.kongGateway.namespace=kong \
   --set config.receivers.kongGateway.deploymentName=kong-kong \
