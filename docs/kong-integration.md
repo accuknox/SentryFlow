@@ -193,6 +193,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: frontend-ingress
+  namespace: <your_namespace>
   annotations:
     konghq.com/strip-path: "true"
 spec:
