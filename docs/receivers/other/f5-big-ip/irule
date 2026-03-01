@@ -28,6 +28,9 @@ when CLIENT_ACCEPTED {
 }
 
 when HTTP_REQUEST {
+    if { [HTTP::method] eq "POST" || [HTTP::method] eq "PUT" } {
+        HTTP::collect $static::max_collect_len
+    }
     set request_time [clock clicks -milliseconds]
 
     # Build request header blob (simple, safer escaping)
@@ -87,7 +90,7 @@ when HTTP_REQUEST_DATA {
         if { $capture_length > $static::max_collect_len } {
             set capture_length $static::max_collect_len
         }
-        set request_payload [b64encode [string range "[HTTP::payload]" 0 $capture_length]]
+        set request_payload [b64encode [string range [HTTP::payload] 0 [expr {$capture_length - 1}]]]
     } 
 }
 

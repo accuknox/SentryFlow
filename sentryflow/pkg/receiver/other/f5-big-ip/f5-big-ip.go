@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	pb "github.com/accuknox/SentryFlow/protobuf/golang"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
@@ -144,7 +145,7 @@ func parseF5LogLine(line string) *pb.APIEvent {
 	ev := &pb.APIEvent{
 		Metadata: &pb.Metadata{
 			ContextId:       0,
-			Timestamp:       uint64(reqTime),
+			Timestamp:       uint64(time.Now().Unix()),
 			MeshId:          "",
 			NodeName:        "",
 			ReceiverName:    "f5-big-ip",
