@@ -83,10 +83,15 @@ type kongGatewayConfig struct {
 	DeploymentName string `json:"deploymentName"`
 }
 
+type muleGatewayConfig struct {
+	Enabled bool `json:"enabled"`
+}
+
 type filters struct {
 	Envoy        *envoyFilterConfig  `json:"envoy,omitempty"`
 	NginxIngress *nginxIngressConfig `json:"nginxIngress,omitempty"`
 	KongGateway  *kongGatewayConfig  `json:"kongGateway,omitempty"`
+	MuleGateway  *muleGatewayConfig  `json:"muleGateway,omitempty"`
 	HttpServer   *server             `json:"httpServer,omitempty"`
 	TCPServer    *server             `json:"tcpServer,omitempty"`
 }
@@ -202,6 +207,15 @@ func New(configFilePath string, logger *zap.SugaredLogger) (*Config, error) {
 	if err := viper.Unmarshal(config); err != nil {
 		logger.Errorf("Failed to unmarshal config file: %v", err)
 		return nil, err
+	}
+	if config.Exporter == nil {
+		config.Exporter = &ExporterConfig{}
+	}
+	if config.Exporter.Grpc == nil {
+		config.Exporter.Grpc = &server{}
+	}
+	if config.Exporter.HTTP == nil {
+		config.Exporter.HTTP = &HttpConfig{}
 	}
 	if config.Filters.HttpServer == nil {
 		config.Filters.HttpServer = &server{}

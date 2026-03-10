@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "sentryflowHost": {
+      "type": "string",
+      "title": "SentryFlow Host",
+      "description": "Hostname or IP address of the SentryFlow server."
+    },
+    "sentryflowPort": {
+      "type": "integer",
+      "title": "SentryFlow HTTP Port",
+      "description": "Port of the SentryFlow HTTP server (default: 8081).",
+      "default": 8081
+    },
+    "sentryflowPath": {
+      "type": "string",
+      "title": "SentryFlow Events Path",
+      "description": "HTTP path where SentryFlow receives Mule events.",
+      "default": "/api/v1/events/mule"
+    },
+    "sendRequestBody": {
+      "type": "boolean",
+      "title": "Forward Request Body",
+      "description": "Whether to include the request body in the telemetry payload (may impact performance).",
+      "default": false
+    },
+    "sendResponseBody": {
+      "type": "boolean",
+      "title": "Forward Response Body",
+      "description": "Whether to include the response body in the telemetry payload (may impact performance).",
+      "default": false
+    },
+    "timeoutMs": {
+      "type": "integer",
+      "title": "Timeout (ms)",
+      "description": "Maximum time in milliseconds to wait for SentryFlow to accept the telemetry POST.",
+      "default": 5000
+    }
+  },
+  "required": [
+    "sentryflowHost"
+  ]
+}
