@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SentryFlow Mule 4 Custom Policy — sentryflow-mule-policy.xml
+  ============================================================
+  This policy intercepts every API request and response flowing through
+  Anypoint Mule Gateway and forwards structured JSON telemetry to a
+  SentryFlow HTTP receiver for API security monitoring.
+
+  Configuration properties (set via Anypoint API Manager UI):
+    sentryflowHost     - hostname or IP of SentryFlow server
+    sentryflowPort     - HTTP port (default: 8081)
+    sentryflowPath     - events path (default: /api/v1/events/mule)
+    sendRequestBody    - include request body (default: false)
+    sendResponseBody   - include response body (default: false)
+    timeoutMs          - POST timeout in ms (default: 5000)
+-->
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:policy="http://www.mulesoft.org/schema/mule/policy"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core
+          http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http
+          http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/policy
+          http://www.mulesoft.org/schema/mule/policy/current/mule-policy.xsd">
+
+  <!-- ============================================================
+       HTTP connection to SentryFlow
+       ============================================================ -->
+  <http:request-config name="sentryflow-connection"
+                       responseTimeout="{{timeoutMs}}">
+    <http:request-connection host="{{sentryflowHost}}"
+                             port="{{sentryflowPort}}"
+                             protocol="HTTP" />
+  </http:request-config>
+
+  <!-- ============================================================
+       Policy Execution
+       ============================================================ -->
+  <policy:proxy name="sentryflow-mule-policy">
+
+    <!-- ==========================================================
+         BEFORE (request interceptor)
+         Capture request metadata before the flow executes.
+         ========================================================== -->
+    <policy:before>
+      <!-- Save request start time (Unix epoch ms) -->
+      <set-variable variableName="sf_requestTimestampMs"
+                    value="#[now() as Number / 1000000]" />
+
+      <!-- Capture request attributes -->
+      <set-variable variableName="sf_method"
+                    value="#[attributes.method]" />
+      <set-variable variableName="sf_path"
+                    value="#[attributes.requestPath]" />
+      <set-variable variableName="sf_queryString"
+                    value="#[attributes.queryString default '']" />
+      <set-variable variableName="sf_scheme"
+                    value="#[attributes.scheme default 'http']" />
+      <set-variable variableName="sf_sourceIp"
+                    value="#[attributes.remoteAddress default '']" />
+      <set-variable variableName="sf_reqHeaders"
+                    value="#[attributes.headers]" />
+
+      <!-- Optionally capture request body -->
+      <choice>
+        <when expression="#[{{sendRequestBody}}]">
+          <set-variable variableName="sf_requestBody"
+                        value="#[payload]" />
+        </when>
+        <otherwise>
+          <set-variable variableName="sf_requestBody" value="" />
+        </otherwise>
+      </choice>
+    </policy:before>
+
+    <!-- ==========================================================
+         AFTER (response interceptor)
+         Capture response metadata and POST telemetry to SentryFlow.
+         ========================================================== -->
+    <policy:after>
+      <!-- Optionally capture response body before we overwrite payload -->
+      <choice>
+        <when expression="#[{{sendResponseBody}}]">
+          <set-variable variableName="sf_responseBody"
+                        value="#[payload]" />
+        </when>
+        <otherwise>
+          <set-variable variableName="sf_responseBody" value="" />
+        </otherwise>
+      </choice>
+
+      <!-- Build the JSON telemetry payload -->
+      <set-payload value="#[
+        output application/json ---
+        {
+          scheme:             vars.sf_scheme,
+          method:             vars.sf_method,
+          path:               vars.sf_path,
+          query:              vars.sf_queryString,
+          protocol:           'HTTP/1.1',
+          sourceIp:           vars.sf_sourceIp,
+          requestHeaders:     vars.sf_reqHeaders,
+          responseHeaders:    attributes.headers,
+          requestBody:        vars.sf_requestBody,
+          responseBody:       vars.sf_responseBody,
+          responseCode:       attributes.statusCode,
+          requestTimestamp:   vars.sf_requestTimestampMs as Number,
+          responseTimestamp:  (now() as Number / 1000000) as Number,
+          apiName:            api.name default '',
+          apiVersion:         api.version default '',
+          appName:            app.name default ''
+        }
+      ]" />
+
+      <!-- POST telemetry to SentryFlow (fire-and-forget; errors are logged, not re-raised) -->
+      <try>
+        <http:request config-ref="sentryflow-connection"
+                      method="POST"
+                      path="{{sentryflowPath}}"
+                      sendBodyMode="ALWAYS">
+          <http:headers>
+            <![CDATA[#[output application/java --- {"Content-Type": "application/json"}]]]>
+          </http:headers>
+        </http:request>
+
+        <error-handler>
+          <on-error-continue enableNotifications="false" logException="true"
+                             type="ANY">
+            <!-- Log but never fail the original API response -->
+            <logger level="WARN"
+                    message="#['[SentryFlow] Failed to send telemetry: ' ++ error.description]" />
+          </on-error-continue>
+        </error-handler>
+      </try>
+    </policy:after>
+
+    <!-- ==========================================================
+         ON-ERROR: propagate original errors unchanged
+         ========================================================== -->
+    <policy:on-error>
+      <raise-error type="#[error.errorType]"
+                   description="#[error.description]" />
+    </policy:on-error>
+
+  </policy:proxy>
+
+</mule>

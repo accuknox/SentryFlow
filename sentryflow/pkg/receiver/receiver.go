@@ -73,6 +73,8 @@ func Init(ctx context.Context, k8sClient client.Client, cfg *config.Config, wg *
 					defer wg.Done()
 					f5.Start(ctx, cfg.Filters.TCPServer.Port, apiEvents)
 				}()
+			case util.MuleGateway:
+				logger.Info("Mule Gateway receiver registered on shared HTTP server")
 			default:
 				return fmt.Errorf("unsupported receiver, %v", other.Name)
 			}
