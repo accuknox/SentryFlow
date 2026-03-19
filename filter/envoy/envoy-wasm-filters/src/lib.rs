@@ -8,13 +8,15 @@ use std::time::{Duration, UNIX_EPOCH};
 const HEADER_X_SENTRYFLOW_TLS_VERSION: &str = "x-sentryflow-tls-version";
 const MAX_BODY_SIZE: usize = 1_000_000; // 1 MB
 
-
+// Add two accumulation buffers to Plugin struct
 #[derive(Default)]
 struct Plugin {
     _context_id: u32,
     config: PluginConfig,
     api_event: APIEvent,
     auth_token_id: u32,
+    request_body_buffer: Vec<u8>,
+    response_body_buffer: Vec<u8>,
 }
 
 #[derive(Deserialize, Clone, Default, Debug)]
@@ -79,7 +81,6 @@ struct Response {
     backend_latency_in_nanos: u64,
 }
 
-
 fn _start() {
     proxy_wasm::main! {{
         proxy_wasm::set_log_level(LogLevel::Warn);
@@ -112,7 +113,7 @@ impl Plugin {
             (":authority", &self.config.auth_authority),
             (":path", &self.config.auth_path),
             ("content-type", "application/json"),
-        ];  
+        ];
 
         match self.dispatch_http_call(
             &self.config.auth_upstream,
@@ -123,11 +124,11 @@ impl Plugin {
         ) {
             Ok(token_id) => {
                 self.auth_token_id = token_id;
-                Action::Pause 
+                Action::Pause
             }
             Err(e) => {
                 error!("Auth dispatch failed: {:?}", e);
-                Action::Continue 
+                Action::Continue
             }
         }
     }
@@ -150,29 +151,34 @@ impl Context for Plugin {
             .unwrap_or_else(|| "500".to_string());
 
         if status == "429" {
-            // STRICT BLOCK: Only if explicitly rate limited
             info!("Context {}: Rate limit EXCEEDED (429). Blocking.", self._context_id);
             self.send_http_response(
-                429, 
+                429,
                 vec![("content-type", "text/plain")],
                 Some(b"Rate limit exceeded."),
             );
         } else {
-            // PASS: For 200 OK, and FAIL-OPEN for anything else (500, 404, etc.)
             if status != "200" {
-                // Log that we are passing even though the service didn't return 200
                 warn!("Context {}: Rate limiter returned unexpected status {}. Failing open.", self._context_id, status);
             }
-            
-            // Unpause the user's request so it goes to the backend
             self.resume_http_request();
         }
     }
+
     fn on_done(&mut self) -> bool {
-        info!(
-            "Context {} finished, dispatching telemetry",
-            self._context_id
-        );
+        // Flush buffers on abrupt disconnect
+        // end_of_stream may never fire if the client drops the connection mid-stream
+        // Promote whatever was accumulated.
+        if self.api_event.request.body.is_empty() && !self.request_body_buffer.is_empty() {
+            self.api_event.request.body =
+                String::from_utf8_lossy(&self.request_body_buffer).into_owned();
+        }
+        if self.api_event.response.body.is_empty() && !self.response_body_buffer.is_empty() {
+            self.api_event.response.body =
+                String::from_utf8_lossy(&self.response_body_buffer).into_owned();
+        }
+
+        info!("Context {} finished, dispatching telemetry", self._context_id);
         dispatch_http_call_to_upstream(self);
         true
     }
@@ -199,6 +205,9 @@ impl RootContext for Plugin {
             config: self.config.clone(),
             api_event: Default::default(),
             auth_token_id: 0,
+            // initialize buffers per-context
+            request_body_buffer: Vec::new(),
+            response_body_buffer: Vec::new(),
         }))
     }
 
@@ -209,21 +218,15 @@ impl RootContext for Plugin {
 
 impl HttpContext for Plugin {
     fn on_http_request_headers(&mut self, _num_headers: usize, _end_of_stream: bool) -> Action {
-        info!(
-            "Source address: {}",
-            String::from_utf8(
-                self.get_property(vec!["source", "address"])
-                    .unwrap_or_default()
-            )
-            .unwrap_or_default()
-        );
-        let (mut src_ip, src_port) = get_url_and_port(
-            String::from_utf8(
-                self.get_property(vec!["source", "address"])
-                    .unwrap_or_default(),
-            )
-            .unwrap_or_default(),
-        );
+        // Fetch source address once, reuse — was fetched twice
+        let raw_src = String::from_utf8(
+            self.get_property(vec!["source", "address"]).unwrap_or_default(),
+        )
+        .unwrap_or_default();
+
+        info!("Source address: {}", raw_src);
+
+        let (mut src_ip, src_port) = get_url_and_port(raw_src);
 
         debug!(
             "Processing request headers for context {}: src={}:{}",
@@ -238,29 +241,25 @@ impl HttpContext for Plugin {
             if !key.starts_with("x-envoy") {
                 headers.insert(key.clone(), value.clone());
             }
-            if key.starts_with("x-forwarded-for") {
-                // Use the real-client IP if available
-                src_ip = value
-                    .split(",")
-                    .map(|s| s.to_string())
-                    .collect::<Vec<String>>()[0]
-                    .clone()
+            // Case-insensitive x-forwarded-for; avoid Vec alloc
+            if key.to_lowercase() == "x-forwarded-for" {
+                if let Some(first_ip) = value.split(',').next() {
+                    src_ip = first_ip.trim().to_string();
+                }
             }
         }
 
         headers.insert(
             "query".to_string(),
             String::from_utf8(
-                self.get_property(vec!["request", "query"])
-                    .unwrap_or_default(),
+                self.get_property(vec!["request", "query"]).unwrap_or_default(),
             )
             .unwrap_or_default(),
         );
         headers.insert(
             ":path".to_string(),
             String::from_utf8(
-                self.get_property(vec!["request", "url_path"])
-                    .unwrap_or_default(),
+                self.get_property(vec!["request", "url_path"]).unwrap_or_default(),
             )
             .unwrap_or_default(),
         );
@@ -282,8 +281,7 @@ impl HttpContext for Plugin {
         self.api_event.request.headers = headers;
 
         let protocol = String::from_utf8(
-            self.get_property(vec!["request", "protocol"])
-                .unwrap_or_default(),
+            self.get_property(vec!["request", "protocol"]).unwrap_or_default(),
         )
         .unwrap_or_default();
         self.api_event.protocol = protocol;
@@ -291,30 +289,40 @@ impl HttpContext for Plugin {
         self.api_event.source.ip = src_ip;
         self.api_event.source.port = src_port;
 
-        // Perform the external rate limit check
         #[cfg(feature = "rate-limit")]
         {
             return self.check_rate_limit();
-        }      
+        }
         Action::Continue
     }
 
     fn on_http_request_body(&mut self, _body_size: usize, _end_of_stream: bool) -> Action {
-        let body = String::from_utf8(
-            self.get_http_request_body(0, _body_size)
-                .unwrap_or_default(),
-        )
-        .unwrap_or_default();
+        // Accumulate chunks instead of overwriting
+        // Envoy flushes the body buffer after Action::Continue, so each call
+        // only contains the current chunk starting at offset 0.
+        // We append to our own buffer and finalize only when end_of_stream fires.
+        if let Some(chunk) = self.get_http_request_body(0, _body_size) {
+            if self.request_body_buffer.len() + chunk.len() <= MAX_BODY_SIZE {
+                self.request_body_buffer.extend_from_slice(&chunk);
+            } else {
+                info!(
+                    "Context {}: Request body exceeded MAX_BODY_SIZE ({} bytes), capping capture",
+                    self._context_id,
+                    self.request_body_buffer.len() + chunk.len()
+                );
+            }
+        }
 
-        if !body.is_empty() && body.len() <= MAX_BODY_SIZE {
-            debug!("Request body captured: {} bytes", body.len());
-            self.api_event.request.body = body;
-        } else if body.len() > MAX_BODY_SIZE {
-            info!(
-                "Request body too large ({} bytes), skipping capture",
-                body.len()
+        if _end_of_stream && !self.request_body_buffer.is_empty() {
+            self.api_event.request.body =
+                String::from_utf8_lossy(&self.request_body_buffer).into_owned();
+            debug!(
+                "Context {}: Request body fully captured ({} bytes)",
+                self._context_id,
+                self.api_event.request.body.len()
             );
         }
+
         Action::Continue
     }
 
@@ -322,8 +330,7 @@ impl HttpContext for Plugin {
         // https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#upstream-attributes
         let (mut dest_ip, mut dest_port) = get_url_and_port(
             String::from_utf8(
-                self.get_property(vec!["upstream", "address"])
-                    .unwrap_or_default(),
+                self.get_property(vec!["upstream", "address"]).unwrap_or_default(),
             )
             .unwrap_or_default(),
         );
@@ -337,17 +344,13 @@ impl HttpContext for Plugin {
         if dest_ip.is_empty() || dest_port == 0 {
             (dest_ip, dest_port) = get_url_and_port(
                 String::from_utf8(
-                    self.get_property(vec!["destination", "address"])
-                        .unwrap_or_default(),
+                    self.get_property(vec!["destination", "address"]).unwrap_or_default(),
                 )
                 .unwrap_or_default(),
             );
         }
 
-        debug!(
-            "Processing response headers: dest={}:{}",
-            dest_ip, dest_port
-        );
+        debug!("Processing response headers: dest={}:{}", dest_ip, dest_port);
 
         let res_headers = self.get_http_response_headers();
         let mut headers: HashMap<String, String> = HashMap::with_capacity(res_headers.len());
@@ -373,31 +376,45 @@ impl HttpContext for Plugin {
     }
 
     fn on_http_response_body(&mut self, _body_size: usize, _end_of_stream: bool) -> Action {
-        let body = String::from_utf8(
-            self.get_http_response_body(0, _body_size)
-                .unwrap_or_default(),
-        )
-        .unwrap_or_default();
-
-        if !body.is_empty() && body.len() <= MAX_BODY_SIZE {
-            debug!("Response body captured: {} bytes", body.len());
-            self.api_event.response.body = body;
-        } else if body.len() > MAX_BODY_SIZE {
-            info!(
-                "Response body too large ({} bytes), skipping capture",
-                body.len()
-            );
+        // Same accumulation pattern as request body
+        // For SSE / LLM streaming, this fires once per DATA frame.
+        // The terminal frame often has _body_size=0 and _end_of_stream=true,
+        // so we finalize from our buffer, not from _body_size.
+        if let Some(chunk) = self.get_http_response_body(0, _body_size) {
+            if self.response_body_buffer.len() + chunk.len() <= MAX_BODY_SIZE {
+                self.response_body_buffer.extend_from_slice(&chunk);
+            } else {
+                info!(
+                    "Context {}: Response body exceeded MAX_BODY_SIZE ({} bytes), capping capture",
+                    self._context_id,
+                    self.response_body_buffer.len() + chunk.len()
+                );
+            }
         }
 
-        if let Some(value) = self.get_property(vec!["response", "backend_latency"]) {
-            // Ensure the byte vector has at least 8 bytes for u64
-            if value.len() >= 8 {
-                self.api_event.response.backend_latency_in_nanos =
-                    u64::from_ne_bytes(value[..8].try_into().unwrap_or_default());
+        if _end_of_stream {
+            if !self.response_body_buffer.is_empty() {
+                self.api_event.response.body =
+                    String::from_utf8_lossy(&self.response_body_buffer).into_owned();
                 debug!(
-                    "Backend latency: {} ns",
-                    self.api_event.response.backend_latency_in_nanos
+                    "Context {}: Response body fully captured ({} bytes)",
+                    self._context_id,
+                    self.api_event.response.body.len()
                 );
+            }
+
+            // Read latency at end_of_stream only
+            // backend_latency is only populated by Envoy after the full upstream
+            // response is received — reading it mid-stream returns stale/zero data.
+            if let Some(value) = self.get_property(vec!["response", "backend_latency"]) {
+                if value.len() >= 8 {
+                    self.api_event.response.backend_latency_in_nanos =
+                        u64::from_ne_bytes(value[..8].try_into().unwrap_or_default());
+                    debug!(
+                        "Context {}: Backend latency: {} ns",
+                        self._context_id, self.api_event.response.backend_latency_in_nanos
+                    );
+                }
             }
         }
 
@@ -431,12 +448,13 @@ fn dispatch_http_call_to_upstream(obj: &mut Plugin) {
         ("Content-Type", "application/json"),
     ];
 
+    // Raise timeout from 1s -> 10s for large LLM payloads
     let http_call_res = obj.dispatch_http_call(
         &obj.config.upstream_name,
         headers,
         Some(telemetry_json.as_bytes()),
         vec![],
-        Duration::from_secs(1),
+        Duration::from_secs(10),
     );
 
     if http_call_res.is_err() {
@@ -451,23 +469,19 @@ fn dispatch_http_call_to_upstream(obj: &mut Plugin) {
 
 fn update_metadata(obj: &mut Plugin) {
     obj.api_event.metadata.node_name = String::from_utf8(
-        obj.get_property(vec!["node", "metadata", "NODE_NAME"])
-            .unwrap_or_default(),
+        obj.get_property(vec!["node", "metadata", "NODE_NAME"]).unwrap_or_default(),
     )
     .unwrap_or_default();
     obj.api_event.metadata.mesh_id = String::from_utf8(
-        obj.get_property(vec!["node", "metadata", "MESH_ID"])
-            .unwrap_or_default(),
+        obj.get_property(vec!["node", "metadata", "MESH_ID"]).unwrap_or_default(),
     )
     .unwrap_or_default();
 
     let istio_version: String = String::from_utf8(
-        obj.get_property(vec!["node", "metadata", "ISTIO_VERSION"])
-            .unwrap_or_default(),
+        obj.get_property(vec!["node", "metadata", "ISTIO_VERSION"]).unwrap_or_default(),
     )
     .unwrap_or_default();
 
-    // Conditional compilation based on feature flag
     #[cfg(feature = "gateway")]
     let proxy_type = "Gateway";
 
@@ -483,17 +497,18 @@ fn update_metadata(obj: &mut Plugin) {
     );
 }
 
+// Use rfind(':') so IPv6 addresses like [fd00::1]:8080 parse correctly
 fn get_url_and_port(address: String) -> (String, u16) {
     if address.is_empty() {
         return (String::new(), 0);
     }
 
-    let parts: Vec<&str> = address.split(':').collect();
-
-    if parts.len() == 2 {
-        let url = parts[0].to_string();
-        let port = parts[1].parse::<u16>().unwrap_or(0);
-        (url, port)
+    if let Some(colon_pos) = address.rfind(':') {
+        let host = address[..colon_pos]
+            .trim_matches(|c| c == '[' || c == ']')
+            .to_string();
+        let port = address[colon_pos + 1..].parse::<u16>().unwrap_or(0);
+        (host, port)
     } else {
         error!("Invalid address format: '{}'", address);
         (String::new(), 0)
