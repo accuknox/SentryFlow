@@ -63,7 +63,9 @@ This produces:
 2. Fill in:
    - **Name:** `SentryFlow API Telemetry`
    - **Asset type:** `Policy` 
-   - **File upload:** upload `filter/mule-gateway/policy-definition/sentryflow-policy.yaml`
+   - **File upload:** 
+      - upload JSON Schema file `filter/mule-gateway/policy-definition/sentryflow-policy.json`
+      - upload Metadata file `filter/mule-gateway/policy-definition/sentryflow-policy.yaml`
 3. Click **Advanced** and set:
    - **Group ID:** your Anypoint org ID (auto-filled)
    - **Asset ID:** `sentryflow-mule-policy`
@@ -82,7 +84,7 @@ You will see `Implementations: Pending` in the left sidebar — that's expected.
    - **Name:** `SentryFlow Mule 4 Policy`
    - **JAR file:** `target/sentryflow-mule-policy-1.0.0-mule-policy.jar`
    - **YAML file:** `sentryflow-implementation-metadata.yaml`
-5. Click **Advanced** → set **Min Mule version:** `4.3.0`
+5. Click **Advanced** → set **version:** `1.0.0`
 6. Click **Add implementation**
 
 The policy is now available in Anypoint API Manager.
@@ -102,12 +104,14 @@ to set this up from scratch using your existing Anypoint SaaS account.
 4. Fill in:
    - **Runtime:** `Mule Gateway`
    - **Proxy type:** `Deploy a proxy application` (CloudHub managed)
+   - **Proxy application name** (e.g. `sentryflow-mule-test`)
+5. Click **Next**, then configure Create new api:
    - **API type:** `HTTP API`
+   - add asset name 
+6. Click **Next**, then configure Downstream:
+   - Enable Manual approval 
+7. Click **Next**, then configure Upsteam:
    - **Backend URL:** use a public test API, e.g. `https://jsonplaceholder.typicode.com`
-   - **Port:** `80`
-5. Click **Next**, then configure:
-   - **Implementation URI:** `https://jsonplaceholder.typicode.com`
-   - **Consumer endpoint:** leave as generated (e.g. `http://0.0.0.0:8081`)
 6. Click **Save & Deploy**
 7. Select your **CloudHub** target and set a **Proxy application name** (e.g. `sentryflow-mule-test`)
    > *Note: The **Proxy application name** is just a unique identifier for your proxy app on CloudHub. It will determine the final URL of your proxy (e.g. `sentryflow-mule-test.us-e2.cloudhub.io`). It must be globally unique across all of CloudHub.*
@@ -135,7 +139,6 @@ After deployment (takes ~2 minutes), find your proxy's public URL:
 | Field | Value |
 |-------|-------|
 | **SentryFlow Host** | `<your SentryFlow host>` (see section below) |
-| **SentryFlow HTTP Port** | `8081` |
 | **SentryFlow Events Path** | `/api/v1/events/mule` |
 | **Forward Request Body** | `false` |
 | **Forward Response Body** | `false` |
@@ -165,8 +168,8 @@ ngrok http 8081
 # Use that as sentryflowHost in the policy config
 ```
 
-> In API Manager policy config, set **SentryFlow Host** to `abc123.ngrok.io`
-> and **port** to `443` (ngrok terminates TLS), or use the ngrok HTTP URL with port `80`.
+> In API Manager policy config, set **SentryFlow Host** to `abc123.ngrok.io`.
+> (The policy will default to communicating over port 80).
 
 ### Option B — Kubernetes with public LoadBalancer
 
@@ -227,8 +230,8 @@ Then in a separate terminal start ngrok:
 ngrok http 8081
 ```
 
-Use the ngrok HTTPS URL (e.g. `https://abc123.ngrok.io`) as the **SentryFlow Host** in API Manager.
-Set the port to `443` (ngrok terminates TLS).
+Use the ngrok HTTP URL host (e.g. `abc123.ngrok.io`) as the **SentryFlow Host** in API Manager.
+The policy will default to connecting over port 80.
 
 ---
 
@@ -295,7 +298,6 @@ kubectl -n sentryflow logs deployment/sentryflow --tail=50 | grep mule
 Expected output:
 ```
 {"level":"INFO","msg":"Mule Gateway receiver listening on :8081/api/v1/events/mule"}
-{"level":"INFO","msg":"Mule Gateway receiver received API event","path":"/todos/1","method":"GET","responseCode":200}
 ```
 
 ### 7.4 Verify via Anypoint Analytics (optional)

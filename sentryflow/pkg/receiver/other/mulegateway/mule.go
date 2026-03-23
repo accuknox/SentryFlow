@@ -23,8 +23,6 @@ const (
 	receiverName    = "mule-gateway"
 	receiverVersion = "4.x"
 
-	// EventsPath is the endpoint that the Mule 4 policy POSTs telemetry to.
-	// It is registered on the shared HTTP server (same port as /healthz and /api/v1/events).
 	EventsPath       = "/api/v1/events/mule"
 	eventsHealthPath = "/api/v1/events/mule/health"
 )
@@ -96,7 +94,10 @@ func RegisterRoutes(ctx context.Context, cfg *config.Config, mux *http.ServeMux,
 }
 
 // handleEvent decodes the JSON payload from the Mule policy and pushes an APIEvent.
-func handleEvent(w http.ResponseWriter, r *http.Request, apiEvents chan *pb.APIEvent, logger interface{ Errorf(string, ...interface{}) }) {
+func handleEvent(w http.ResponseWriter, r *http.Request, apiEvents chan *pb.APIEvent, logger interface {
+	Errorf(string, ...interface{})
+	Infof(string, ...interface{})
+}) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -116,6 +117,8 @@ func handleEvent(w http.ResponseWriter, r *http.Request, apiEvents chan *pb.APIE
 		logger.Errorf("Mule Gateway: failed to parse event JSON: %v", err)
 		return
 	}
+
+	logger.Infof("Mule Gateway receiver received API event for method=%s path=%s responseCode=%d", ev.Method, ev.Path, ev.ResponseCode)
 
 	apiEvents <- toProto(&ev)
 

@@ -8,7 +8,6 @@
 
   Configuration properties (set via Anypoint API Manager UI):
     sentryflowHost     - hostname or IP of SentryFlow server
-    sentryflowPort     - HTTP port (default: 8081)
     sentryflowPath     - events path (default: /api/v1/events/mule)
     sendRequestBody    - include request body (default: false)
     sendResponseBody   - include response body (default: false)
@@ -27,16 +26,6 @@
           http://www.mulesoft.org/schema/mule/policy/current/mule-policy.xsd">
 
   <!-- ============================================================
-       HTTP connection to SentryFlow
-       ============================================================ -->
-  <http:request-config name="sentryflow-connection"
-                       responseTimeout="{{timeoutMs}}">
-    <http:request-connection host="{{sentryflowHost}}"
-                             port="{{sentryflowPort}}"
-                             protocol="HTTP" />
-  </http:request-config>
-
-  <!-- ============================================================
        Policy Execution
        ============================================================ -->
   <policy:proxy name="sentryflow-mule-policy">
@@ -46,6 +35,8 @@
          Capture request metadata before the flow executes.
          ========================================================== -->
     <policy:before>
+      <logger level="INFO" message="#['[SentryFlow Policy] Intercepting request to ' ++ attributes.method ++ ' ' ++ attributes.requestPath]" />
+
       <!-- Save request start time (Unix epoch ms) -->
       <set-variable variableName="sf_requestTimestampMs"
                     value="#[now() as Number / 1000000]" />
@@ -115,11 +106,14 @@
         }
       ]" />
 
+      <!-- Log before sending -->
+      <logger level="INFO" message="#['[SentryFlow Policy] Dispatching telemetry to ' ++ (if ('{{sentryflowHost}}' startsWith 'http') '{{sentryflowHost}}' else 'http://{{sentryflowHost}}') ++ '{{sentryflowPath}}']" />
+
       <!-- POST telemetry to SentryFlow (fire-and-forget; errors are logged, not re-raised) -->
       <try>
-        <http:request config-ref="sentryflow-connection"
-                      method="POST"
-                      path="{{sentryflowPath}}"
+        <http:request method="POST"
+                      url="#[(if ('{{sentryflowHost}}' startsWith 'http') '{{sentryflowHost}}' else 'http://{{sentryflowHost}}') ++ '{{sentryflowPath}}']"
+                      responseTimeout="{{timeoutMs}}"
                       sendBodyMode="ALWAYS">
           <http:headers>
             <![CDATA[#[output application/java --- {"Content-Type": "application/json"}]]]>

@@ -7,12 +7,6 @@
       "title": "SentryFlow Host",
       "description": "Hostname or IP address of the SentryFlow server."
     },
-    "sentryflowPort": {
-      "type": "integer",
-      "title": "SentryFlow HTTP Port",
-      "description": "Port of the SentryFlow HTTP server (default: 8081).",
-      "default": 8081
-    },
     "sentryflowPath": {
       "type": "string",
       "title": "SentryFlow Events Path",

@@ -19,13 +19,6 @@ configuration:
     type: string
     optional: false
     sensitive: false
-  - propertyName: sentryflowPort
-    name: SentryFlow HTTP Port
-    description: Port of the SentryFlow HTTP server (default 8081).
-    type: int
-    defaultValue: 8081
-    optional: true
-    sensitive: false
   - propertyName: sentryflowPath
     name: SentryFlow Events Path
     description: HTTP path where SentryFlow receives Mule events.
