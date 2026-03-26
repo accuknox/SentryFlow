@@ -1,0 +1,49 @@
+#%Policy Definition 0.1
+name: SentryFlow API Telemetry
+description: >
+  Intercepts every API request and response passing through Mule Gateway
+  and forwards structured JSON telemetry to a SentryFlow server for
+  API security monitoring and observability.
+category: Security
+violationCategory: security
+resourceLevelSupported: true
+encryptionSupported: false
+standalone: true
+requiresConnectivity: false
+providedCharacteristics: []
+requiredCharacteristics: []
+configuration:
+  - propertyName: sentryflowHost
+    name: SentryFlow Host
+    description: Hostname or IP address of the SentryFlow server.
+    type: string
+    optional: false
+    sensitive: false
+  - propertyName: sentryflowPath
+    name: SentryFlow Events Path
+    description: HTTP path where SentryFlow receives Mule events.
+    type: string
+    defaultValue: /api/v1/events/mule
+    optional: true
+    sensitive: false
+  - propertyName: sendRequestBody
+    name: Forward Request Body
+    description: Include request body in telemetry payload (may impact performance).
+    type: boolean
+    defaultValue: false
+    optional: true
+    sensitive: false
+  - propertyName: sendResponseBody
+    name: Forward Response Body
+    description: Include response body in telemetry payload (may impact performance).
+    type: boolean
+    defaultValue: false
+    optional: true
+    sensitive: false
+  - propertyName: timeoutMs
+    name: Timeout (ms)
+    description: Max milliseconds to wait for SentryFlow to accept the telemetry POST.
+    type: int
+    defaultValue: 5000
+    optional: true
+    sensitive: false

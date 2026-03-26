@@ -25,6 +25,7 @@ const (
 	AzureAPIM                           = "Azure-APIM"
 	AWSApiGateway                       = "aws-api-gateway"
 	F5BigIp                             = "f5-big-ip"
+	MuleGateway                         = "mule-gateway" // https://docs.mulesoft.com/mule-gateway/mule-gateway-capabilities-mule4
 )
 
 func LoggerFromCtx(ctx context.Context) *zap.SugaredLogger {

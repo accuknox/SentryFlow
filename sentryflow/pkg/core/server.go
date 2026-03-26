@@ -29,12 +29,8 @@ func (m *Manager) startGrpcServer(port uint16) {
 	}
 }
 
-func (m *Manager) startHttpServer(port uint16) {
+func (m *Manager) startHttpServer(mux *http.ServeMux, port uint16) {
 	m.Logger.Info("Starting HTTP server")
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", m.healthzHandler)
-	mux.HandleFunc("/api/v1/events", m.eventsHandler)
 
 	m.HttpServer = &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),

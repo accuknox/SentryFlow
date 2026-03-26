@@ -1,0 +1,27 @@
+{
+  "configs": [
+    "sentryflow-mule-policy.xml"
+  ],
+  "secureProperties": [],
+  "supportedJavaVersions": [],
+  "redeploymentEnabled": true,
+  "name": "com.accuknox.sentryflow:sentryflow-mule-policy:1.0.0",
+  "minMuleVersion": "4.3.0",
+  "requiredProduct": "MULE_EE",
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedResources": []
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {
+      "classifier": "mule-policy",
+      "artifactId": "sentryflow-mule-policy",
+      "type": "jar",
+      "version": "1.0.0",
+      "groupId": "com.accuknox.sentryflow"
+    }
+  }
+}
