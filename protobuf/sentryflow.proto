@@ -37,15 +37,18 @@ message APILog {
   int32 responseCode = 54;
 }
 
+// APIEvent represents an event related to an API call, including metadata,
+// source and destination workloads, and network information.
 message APIEvent {
   Metadata metadata = 1;
-
   Workload source = 3;
   Workload destination = 4;
   Request request = 5;
   Response response = 6;
   string protocol = 7;
-  uint64 latency_ns = 8; 
+
+  // End-to-end observed latency in milliseconds.
+  uint32 latency_ms = 8;
 }
 
 message Metadata {
@@ -53,36 +56,81 @@ message Metadata {
   uint64 timestamp = 2;
   string istio_version = 3 [deprecated = true];
   string mesh_id = 4;
+
+  // The name of the Kubernetes node where the workload is running. If the workload
+  // is not running in a Kubernetes environment, this field will be empty.
   string node_name = 5;
+
+  // Name of receiver (e.g., Istio, nginx).
   string receiver_name = 6;
+  // Version of receiver (e.g., 1.26.2).
   string receiver_version = 7;
 }
 
+// Workload represents a generic entity that can be either a Kubernetes or
+// non-Kubernetes resource. It serves as a source or destination for access
+// within a system.
 message Workload {
+  // The name of the workload.
   string name = 1;
+
+  // The namespace in which the workload is deployed. This field is only applicable
+  // for Kubernetes workloads.
   string namespace = 2;
+
+  // The IP address of the workload.
   string ip = 3;
+
+  // The port number used by the workload.
   int32 port = 4;
-  map<string, string> labels = 5; // K8s labels for policy matching
-  string kind = 6; // "Pod" | "Service" | "External"
+
+  // K8s labels for policy matching.
+  map<string, string> labels = 5;
+
+  // Workload kind: "Pod", "Service", or "External".
+  string kind = 6;
 }
 
+// Request represents an incoming HTTP request.
 message Request {
   map<string, string> headers = 1;
   string body = 2;
-  string method = 3; // GET/POST/gRPC method name
-  string path = 4; // URL path or gRPC full method path
+
+  // HTTP method (GET, POST, etc.) or gRPC method name.
+  string method = 3;
+
+  // URL path or gRPC full method path (e.g. /pkg.Svc/Method).
+  string path = 4;
+
+  // gRPC service name (e.g. "helloworld.Greeter")
+  string grpc_service = 5;
+
+  // gRPC method name (e.g. "SayHello")
+  string grpc_method = 6;
+
+  // Content-Type header value (e.g. "application/grpc")
+  string content_type = 7;
 }
 
+// Response represents an outgoing HTTP response.
 message Response {
   map<string, string> headers = 1;
   string body = 2;
   uint64 backend_latency_in_nanos = 3;
-  int32 status_code = 4; // HTTP/gRPC status code
+
+  // HTTP status code or gRPC status code.
+  int32 status_code = 4;
+
+  // gRPC status code (0=OK, 1=CANCELLED, 2=UNKNOWN, etc.)
+  int32 grpc_status_code = 5;
+
+  // Human-readable gRPC error message from grpc-message trailer.
+  string grpc_status_message = 6;
 }
 
 message APIMetrics {
   map<string, uint64> perAPICounts = 1;
+  // @todo: add some more metrics here
 }
 
 message MetricValue {
@@ -100,6 +148,21 @@ message EnvoyMetrics {
   map<string, MetricValue> metrics = 21;
 }
 
+service SentryFlow {
+  rpc GetAPILog(ClientInfo) returns (stream APILog) {
+    option deprecated = true;
+  }
+  rpc GetAPIEvent(ClientInfo) returns (stream APIEvent);
+  rpc SendAPIEvent(APIEvent) returns(APIEvent);
+  rpc GetAPIMetrics(ClientInfo) returns (stream APIMetrics);
+  rpc GetEnvoyMetrics(ClientInfo) returns (stream EnvoyMetrics);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KubeArmor API Observer — extension types
+// ═══════════════════════════════════════════════════════════════════════════
+
+// APIEventFilter controls which events are streamed to a subscriber.
 message APIEventFilter {
   string namespace = 1;
   string pod_name = 2;
@@ -109,10 +172,21 @@ message APIEventFilter {
   int64 min_duration_ms = 6;
 }
 
-message MetricsRequest {
-  int64 time_range_seconds = 1;
+// MetricsRequest is the input for GetAPIMetrics.
+message MetricsRequest {}
+
+// APIObserverMetrics provides aggregated API observability statistics.
+message APIObserverMetrics {
+  string timestamp = 1;
+  uint64 total_events = 2;
+  map<string, uint64> events_by_protocol = 3;
+  map<string, uint64> events_by_status = 4;
+  repeated EndpointMetric top_endpoints = 5;
+  map<string, double> avg_latency_by_endpoint = 6;
+  double error_rate = 7;
 }
 
+// EndpointMetric captures per-endpoint statistics.
 message EndpointMetric {
   string method = 1;
   string path = 2;
@@ -122,27 +196,7 @@ message EndpointMetric {
   double p99_latency_ms = 6;
 }
 
-message APIObserverMetrics {
-  uint64 timestamp = 1;
-  uint64 total_events = 2;
-  map<string, uint64> events_by_protocol = 3;
-  map<string, uint64> events_by_status = 4;
-  repeated EndpointMetric top_endpoints = 5;
-  map<string, double> avg_latency_by_endpoint = 6;
-  double error_rate = 7;
-}
-
-service SentryFlow {
-  rpc GetAPILog(ClientInfo) returns (stream APILog) {
-    option deprecated = true;
-  }
-  rpc GetAPIEvent(ClientInfo) returns (stream APIEvent);
-  rpc SendAPIEvent(APIEvent) returns (APIEvent);
-  rpc GetAPIMetrics(ClientInfo) returns (stream APIMetrics);
-  rpc GetEnvoyMetrics(ClientInfo) returns (stream EnvoyMetrics);
-}
-
-// Service for kubearmor — does not touch the SentryFlow service above.
+// APIObserverService provides KubeArmor-specific API event streaming.
 service APIObserverService {
   rpc GetAPIEvents(APIEventFilter) returns (stream APIEvent);
   rpc GetAPIMetrics(MetricsRequest) returns (APIObserverMetrics);
