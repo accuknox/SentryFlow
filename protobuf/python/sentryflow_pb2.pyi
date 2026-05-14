@@ -7,7 +7,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class ClientInfo(_message.Message):
-    __slots__ = ()
+    __slots__ = ("hostName", "IPAddress")
     HOSTNAME_FIELD_NUMBER: _ClassVar[int]
     IPADDRESS_FIELD_NUMBER: _ClassVar[int]
     hostName: str
@@ -15,16 +15,16 @@ class ClientInfo(_message.Message):
     def __init__(self, hostName: _Optional[str] = ..., IPAddress: _Optional[str] = ...) -> None: ...
 
 class APILog(_message.Message):
-    __slots__ = ()
+    __slots__ = ("id", "timeStamp", "srcNamespace", "srcName", "srcLabel", "srcType", "srcIP", "srcPort", "dstNamespace", "dstName", "dstLabel", "dstType", "dstIP", "dstPort", "protocol", "method", "path", "responseCode")
     class SrcLabelEntry(_message.Message):
-        __slots__ = ()
+        __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
         value: str
         def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
     class DstLabelEntry(_message.Message):
-        __slots__ = ()
+        __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
@@ -69,25 +69,25 @@ class APILog(_message.Message):
     def __init__(self, id: _Optional[int] = ..., timeStamp: _Optional[str] = ..., srcNamespace: _Optional[str] = ..., srcName: _Optional[str] = ..., srcLabel: _Optional[_Mapping[str, str]] = ..., srcType: _Optional[str] = ..., srcIP: _Optional[str] = ..., srcPort: _Optional[str] = ..., dstNamespace: _Optional[str] = ..., dstName: _Optional[str] = ..., dstLabel: _Optional[_Mapping[str, str]] = ..., dstType: _Optional[str] = ..., dstIP: _Optional[str] = ..., dstPort: _Optional[str] = ..., protocol: _Optional[str] = ..., method: _Optional[str] = ..., path: _Optional[str] = ..., responseCode: _Optional[int] = ...) -> None: ...
 
 class APIEvent(_message.Message):
-    __slots__ = ()
+    __slots__ = ("metadata", "source", "destination", "request", "response", "protocol", "latency_ms")
     METADATA_FIELD_NUMBER: _ClassVar[int]
     SOURCE_FIELD_NUMBER: _ClassVar[int]
     DESTINATION_FIELD_NUMBER: _ClassVar[int]
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     RESPONSE_FIELD_NUMBER: _ClassVar[int]
     PROTOCOL_FIELD_NUMBER: _ClassVar[int]
-    LATENCY_NS_FIELD_NUMBER: _ClassVar[int]
+    LATENCY_MS_FIELD_NUMBER: _ClassVar[int]
     metadata: Metadata
     source: Workload
     destination: Workload
     request: Request
     response: Response
     protocol: str
-    latency_ns: int
-    def __init__(self, metadata: _Optional[_Union[Metadata, _Mapping]] = ..., source: _Optional[_Union[Workload, _Mapping]] = ..., destination: _Optional[_Union[Workload, _Mapping]] = ..., request: _Optional[_Union[Request, _Mapping]] = ..., response: _Optional[_Union[Response, _Mapping]] = ..., protocol: _Optional[str] = ..., latency_ns: _Optional[int] = ...) -> None: ...
+    latency_ms: int
+    def __init__(self, metadata: _Optional[_Union[Metadata, _Mapping]] = ..., source: _Optional[_Union[Workload, _Mapping]] = ..., destination: _Optional[_Union[Workload, _Mapping]] = ..., request: _Optional[_Union[Request, _Mapping]] = ..., response: _Optional[_Union[Response, _Mapping]] = ..., protocol: _Optional[str] = ..., latency_ms: _Optional[int] = ...) -> None: ...
 
 class Metadata(_message.Message):
-    __slots__ = ()
+    __slots__ = ("context_id", "timestamp", "istio_version", "mesh_id", "node_name", "receiver_name", "receiver_version")
     CONTEXT_ID_FIELD_NUMBER: _ClassVar[int]
     TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
     ISTIO_VERSION_FIELD_NUMBER: _ClassVar[int]
@@ -105,9 +105,9 @@ class Metadata(_message.Message):
     def __init__(self, context_id: _Optional[int] = ..., timestamp: _Optional[int] = ..., istio_version: _Optional[str] = ..., mesh_id: _Optional[str] = ..., node_name: _Optional[str] = ..., receiver_name: _Optional[str] = ..., receiver_version: _Optional[str] = ...) -> None: ...
 
 class Workload(_message.Message):
-    __slots__ = ()
+    __slots__ = ("name", "namespace", "ip", "port", "labels", "kind")
     class LabelsEntry(_message.Message):
-        __slots__ = ()
+        __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
@@ -128,9 +128,9 @@ class Workload(_message.Message):
     def __init__(self, name: _Optional[str] = ..., namespace: _Optional[str] = ..., ip: _Optional[str] = ..., port: _Optional[int] = ..., labels: _Optional[_Mapping[str, str]] = ..., kind: _Optional[str] = ...) -> None: ...
 
 class Request(_message.Message):
-    __slots__ = ()
+    __slots__ = ("headers", "body", "method", "path", "grpc_service", "grpc_method", "content_type")
     class HeadersEntry(_message.Message):
-        __slots__ = ()
+        __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
@@ -140,16 +140,22 @@ class Request(_message.Message):
     BODY_FIELD_NUMBER: _ClassVar[int]
     METHOD_FIELD_NUMBER: _ClassVar[int]
     PATH_FIELD_NUMBER: _ClassVar[int]
+    GRPC_SERVICE_FIELD_NUMBER: _ClassVar[int]
+    GRPC_METHOD_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_TYPE_FIELD_NUMBER: _ClassVar[int]
     headers: _containers.ScalarMap[str, str]
     body: str
     method: str
     path: str
-    def __init__(self, headers: _Optional[_Mapping[str, str]] = ..., body: _Optional[str] = ..., method: _Optional[str] = ..., path: _Optional[str] = ...) -> None: ...
+    grpc_service: str
+    grpc_method: str
+    content_type: str
+    def __init__(self, headers: _Optional[_Mapping[str, str]] = ..., body: _Optional[str] = ..., method: _Optional[str] = ..., path: _Optional[str] = ..., grpc_service: _Optional[str] = ..., grpc_method: _Optional[str] = ..., content_type: _Optional[str] = ...) -> None: ...
 
 class Response(_message.Message):
-    __slots__ = ()
+    __slots__ = ("headers", "body", "backend_latency_in_nanos", "status_code", "grpc_status_code", "grpc_status_message")
     class HeadersEntry(_message.Message):
-        __slots__ = ()
+        __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
@@ -159,16 +165,20 @@ class Response(_message.Message):
     BODY_FIELD_NUMBER: _ClassVar[int]
     BACKEND_LATENCY_IN_NANOS_FIELD_NUMBER: _ClassVar[int]
     STATUS_CODE_FIELD_NUMBER: _ClassVar[int]
+    GRPC_STATUS_CODE_FIELD_NUMBER: _ClassVar[int]
+    GRPC_STATUS_MESSAGE_FIELD_NUMBER: _ClassVar[int]
     headers: _containers.ScalarMap[str, str]
     body: str
     backend_latency_in_nanos: int
     status_code: int
-    def __init__(self, headers: _Optional[_Mapping[str, str]] = ..., body: _Optional[str] = ..., backend_latency_in_nanos: _Optional[int] = ..., status_code: _Optional[int] = ...) -> None: ...
+    grpc_status_code: int
+    grpc_status_message: str
+    def __init__(self, headers: _Optional[_Mapping[str, str]] = ..., body: _Optional[str] = ..., backend_latency_in_nanos: _Optional[int] = ..., status_code: _Optional[int] = ..., grpc_status_code: _Optional[int] = ..., grpc_status_message: _Optional[str] = ...) -> None: ...
 
 class APIMetrics(_message.Message):
-    __slots__ = ()
+    __slots__ = ("perAPICounts",)
     class PerAPICountsEntry(_message.Message):
-        __slots__ = ()
+        __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
@@ -179,9 +189,9 @@ class APIMetrics(_message.Message):
     def __init__(self, perAPICounts: _Optional[_Mapping[str, int]] = ...) -> None: ...
 
 class MetricValue(_message.Message):
-    __slots__ = ()
+    __slots__ = ("value",)
     class ValueEntry(_message.Message):
-        __slots__ = ()
+        __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
@@ -192,16 +202,16 @@ class MetricValue(_message.Message):
     def __init__(self, value: _Optional[_Mapping[str, str]] = ...) -> None: ...
 
 class EnvoyMetrics(_message.Message):
-    __slots__ = ()
+    __slots__ = ("timeStamp", "namespace", "name", "IPAddress", "labels", "metrics")
     class LabelsEntry(_message.Message):
-        __slots__ = ()
+        __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
         value: str
         def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
     class MetricsEntry(_message.Message):
-        __slots__ = ()
+        __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
@@ -222,7 +232,7 @@ class EnvoyMetrics(_message.Message):
     def __init__(self, timeStamp: _Optional[str] = ..., namespace: _Optional[str] = ..., name: _Optional[str] = ..., IPAddress: _Optional[str] = ..., labels: _Optional[_Mapping[str, str]] = ..., metrics: _Optional[_Mapping[str, MetricValue]] = ...) -> None: ...
 
 class APIEventFilter(_message.Message):
-    __slots__ = ()
+    __slots__ = ("namespace", "pod_name", "protocols", "methods", "status_patterns", "min_duration_ms")
     NAMESPACE_FIELD_NUMBER: _ClassVar[int]
     POD_NAME_FIELD_NUMBER: _ClassVar[int]
     PROTOCOLS_FIELD_NUMBER: _ClassVar[int]
@@ -239,12 +249,49 @@ class APIEventFilter(_message.Message):
 
 class MetricsRequest(_message.Message):
     __slots__ = ()
-    TIME_RANGE_SECONDS_FIELD_NUMBER: _ClassVar[int]
-    time_range_seconds: int
-    def __init__(self, time_range_seconds: _Optional[int] = ...) -> None: ...
+    def __init__(self) -> None: ...
+
+class APIObserverMetrics(_message.Message):
+    __slots__ = ("timestamp", "total_events", "events_by_protocol", "events_by_status", "top_endpoints", "avg_latency_by_endpoint", "error_rate")
+    class EventsByProtocolEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: int
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
+    class EventsByStatusEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: int
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
+    class AvgLatencyByEndpointEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: float
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[float] = ...) -> None: ...
+    TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
+    TOTAL_EVENTS_FIELD_NUMBER: _ClassVar[int]
+    EVENTS_BY_PROTOCOL_FIELD_NUMBER: _ClassVar[int]
+    EVENTS_BY_STATUS_FIELD_NUMBER: _ClassVar[int]
+    TOP_ENDPOINTS_FIELD_NUMBER: _ClassVar[int]
+    AVG_LATENCY_BY_ENDPOINT_FIELD_NUMBER: _ClassVar[int]
+    ERROR_RATE_FIELD_NUMBER: _ClassVar[int]
+    timestamp: str
+    total_events: int
+    events_by_protocol: _containers.ScalarMap[str, int]
+    events_by_status: _containers.ScalarMap[str, int]
+    top_endpoints: _containers.RepeatedCompositeFieldContainer[EndpointMetric]
+    avg_latency_by_endpoint: _containers.ScalarMap[str, float]
+    error_rate: float
+    def __init__(self, timestamp: _Optional[str] = ..., total_events: _Optional[int] = ..., events_by_protocol: _Optional[_Mapping[str, int]] = ..., events_by_status: _Optional[_Mapping[str, int]] = ..., top_endpoints: _Optional[_Iterable[_Union[EndpointMetric, _Mapping]]] = ..., avg_latency_by_endpoint: _Optional[_Mapping[str, float]] = ..., error_rate: _Optional[float] = ...) -> None: ...
 
 class EndpointMetric(_message.Message):
-    __slots__ = ()
+    __slots__ = ("method", "path", "request_count", "avg_latency_ms", "p95_latency_ms", "p99_latency_ms")
     METHOD_FIELD_NUMBER: _ClassVar[int]
     PATH_FIELD_NUMBER: _ClassVar[int]
     REQUEST_COUNT_FIELD_NUMBER: _ClassVar[int]
@@ -258,42 +305,3 @@ class EndpointMetric(_message.Message):
     p95_latency_ms: float
     p99_latency_ms: float
     def __init__(self, method: _Optional[str] = ..., path: _Optional[str] = ..., request_count: _Optional[int] = ..., avg_latency_ms: _Optional[float] = ..., p95_latency_ms: _Optional[float] = ..., p99_latency_ms: _Optional[float] = ...) -> None: ...
-
-class APIObserverMetrics(_message.Message):
-    __slots__ = ()
-    class EventsByProtocolEntry(_message.Message):
-        __slots__ = ()
-        KEY_FIELD_NUMBER: _ClassVar[int]
-        VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: int
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
-    class EventsByStatusEntry(_message.Message):
-        __slots__ = ()
-        KEY_FIELD_NUMBER: _ClassVar[int]
-        VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: int
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[int] = ...) -> None: ...
-    class AvgLatencyByEndpointEntry(_message.Message):
-        __slots__ = ()
-        KEY_FIELD_NUMBER: _ClassVar[int]
-        VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: float
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[float] = ...) -> None: ...
-    TIMESTAMP_FIELD_NUMBER: _ClassVar[int]
-    TOTAL_EVENTS_FIELD_NUMBER: _ClassVar[int]
-    EVENTS_BY_PROTOCOL_FIELD_NUMBER: _ClassVar[int]
-    EVENTS_BY_STATUS_FIELD_NUMBER: _ClassVar[int]
-    TOP_ENDPOINTS_FIELD_NUMBER: _ClassVar[int]
-    AVG_LATENCY_BY_ENDPOINT_FIELD_NUMBER: _ClassVar[int]
-    ERROR_RATE_FIELD_NUMBER: _ClassVar[int]
-    timestamp: int
-    total_events: int
-    events_by_protocol: _containers.ScalarMap[str, int]
-    events_by_status: _containers.ScalarMap[str, int]
-    top_endpoints: _containers.RepeatedCompositeFieldContainer[EndpointMetric]
-    avg_latency_by_endpoint: _containers.ScalarMap[str, float]
-    error_rate: float
-    def __init__(self, timestamp: _Optional[int] = ..., total_events: _Optional[int] = ..., events_by_protocol: _Optional[_Mapping[str, int]] = ..., events_by_status: _Optional[_Mapping[str, int]] = ..., top_endpoints: _Optional[_Iterable[_Union[EndpointMetric, _Mapping]]] = ..., avg_latency_by_endpoint: _Optional[_Mapping[str, float]] = ..., error_rate: _Optional[float] = ...) -> None: ...
