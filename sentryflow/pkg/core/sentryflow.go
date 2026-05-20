@@ -31,6 +31,7 @@ import (
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/exporter"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/k8s"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/receiver"
+	"github.com/accuknox/SentryFlow/sentryflow/pkg/receiver/other/mulegateway"
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
 )
 
@@ -87,10 +88,23 @@ func (m *Manager) run(cfg *config.Config, kubeConfig string) {
 		m.K8sClient = k8sClient
 	}
 
+	// Build the shared HTTP mux. Register core routes first, then any
+	// receivers that piggy-back on the same port (e.g. Mule Gateway).
+	httpMux := http.NewServeMux()
+	httpMux.HandleFunc("/healthz", m.healthzHandler)
+	httpMux.HandleFunc("/api/v1/events", m.eventsHandler)
+
+	if cfg.Filters.MuleGateway != nil {
+		if err := mulegateway.RegisterRoutes(m.Ctx, cfg, httpMux, m.ApiEvents); err != nil {
+			m.Logger.Errorf("failed to register mule gateway routes: %v", err)
+			return
+		}
+	}
+
 	m.Wg.Add(1)
 	go func() {
 		defer m.Wg.Done()
-		m.startHttpServer(cfg.Filters.HttpServer.Port)
+		m.startHttpServer(httpMux, cfg.Filters.HttpServer.Port)
 	}()
 
 	m.receiversCtx, m.receiversCancelFunc = m.setupSignalHandler(make(chan os.Signal, 2))

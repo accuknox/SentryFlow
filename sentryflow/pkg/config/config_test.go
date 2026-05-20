@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/accuknox/SentryFlow/sentryflow/pkg/util"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestConfig_validate(t *testing.T) {
@@ -555,7 +556,7 @@ func TestNew(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("New() got = %v, want %v", got, tt.want)
+				t.Errorf("Mismatch (-want +got):\n%s", cmp.Diff(tt.want, got))
 			}
 		})
 	}

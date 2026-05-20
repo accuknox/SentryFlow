@@ -1,0 +1,14 @@
+filters:
+  httpServer:
+    port: 8081
+  muleGateway:
+    enabled: true
+
+receivers:
+  other:
+    - name: mule-gateway
+      namespace: default
+
+exporter:
+  grpc:
+    port: 8080
