@@ -69,7 +69,7 @@ class APILog(_message.Message):
     def __init__(self, id: _Optional[int] = ..., timeStamp: _Optional[str] = ..., srcNamespace: _Optional[str] = ..., srcName: _Optional[str] = ..., srcLabel: _Optional[_Mapping[str, str]] = ..., srcType: _Optional[str] = ..., srcIP: _Optional[str] = ..., srcPort: _Optional[str] = ..., dstNamespace: _Optional[str] = ..., dstName: _Optional[str] = ..., dstLabel: _Optional[_Mapping[str, str]] = ..., dstType: _Optional[str] = ..., dstIP: _Optional[str] = ..., dstPort: _Optional[str] = ..., protocol: _Optional[str] = ..., method: _Optional[str] = ..., path: _Optional[str] = ..., responseCode: _Optional[int] = ...) -> None: ...
 
 class APIEvent(_message.Message):
-    __slots__ = ("metadata", "source", "destination", "request", "response", "protocol", "latency_ms")
+    __slots__ = ("metadata", "source", "destination", "request", "response", "protocol", "latency_ms", "dns_request", "dns_response")
     METADATA_FIELD_NUMBER: _ClassVar[int]
     SOURCE_FIELD_NUMBER: _ClassVar[int]
     DESTINATION_FIELD_NUMBER: _ClassVar[int]
@@ -77,6 +77,8 @@ class APIEvent(_message.Message):
     RESPONSE_FIELD_NUMBER: _ClassVar[int]
     PROTOCOL_FIELD_NUMBER: _ClassVar[int]
     LATENCY_MS_FIELD_NUMBER: _ClassVar[int]
+    DNS_REQUEST_FIELD_NUMBER: _ClassVar[int]
+    DNS_RESPONSE_FIELD_NUMBER: _ClassVar[int]
     metadata: Metadata
     source: Workload
     destination: Workload
@@ -84,7 +86,9 @@ class APIEvent(_message.Message):
     response: Response
     protocol: str
     latency_ms: int
-    def __init__(self, metadata: _Optional[_Union[Metadata, _Mapping]] = ..., source: _Optional[_Union[Workload, _Mapping]] = ..., destination: _Optional[_Union[Workload, _Mapping]] = ..., request: _Optional[_Union[Request, _Mapping]] = ..., response: _Optional[_Union[Response, _Mapping]] = ..., protocol: _Optional[str] = ..., latency_ms: _Optional[int] = ...) -> None: ...
+    dns_request: DNSRequest
+    dns_response: DNSResponse
+    def __init__(self, metadata: _Optional[_Union[Metadata, _Mapping]] = ..., source: _Optional[_Union[Workload, _Mapping]] = ..., destination: _Optional[_Union[Workload, _Mapping]] = ..., request: _Optional[_Union[Request, _Mapping]] = ..., response: _Optional[_Union[Response, _Mapping]] = ..., protocol: _Optional[str] = ..., latency_ms: _Optional[int] = ..., dns_request: _Optional[_Union[DNSRequest, _Mapping]] = ..., dns_response: _Optional[_Union[DNSResponse, _Mapping]] = ...) -> None: ...
 
 class Metadata(_message.Message):
     __slots__ = ("context_id", "timestamp", "istio_version", "mesh_id", "node_name", "receiver_name", "receiver_version")
@@ -174,6 +178,24 @@ class Response(_message.Message):
     grpc_status_code: int
     grpc_status_message: str
     def __init__(self, headers: _Optional[_Mapping[str, str]] = ..., body: _Optional[str] = ..., backend_latency_in_nanos: _Optional[int] = ..., status_code: _Optional[int] = ..., grpc_status_code: _Optional[int] = ..., grpc_status_message: _Optional[str] = ...) -> None: ...
+
+class DNSRequest(_message.Message):
+    __slots__ = ("query_name", "query_type")
+    QUERY_NAME_FIELD_NUMBER: _ClassVar[int]
+    QUERY_TYPE_FIELD_NUMBER: _ClassVar[int]
+    query_name: str
+    query_type: str
+    def __init__(self, query_name: _Optional[str] = ..., query_type: _Optional[str] = ...) -> None: ...
+
+class DNSResponse(_message.Message):
+    __slots__ = ("rcode", "rcode_name", "resolved_ips")
+    RCODE_FIELD_NUMBER: _ClassVar[int]
+    RCODE_NAME_FIELD_NUMBER: _ClassVar[int]
+    RESOLVED_IPS_FIELD_NUMBER: _ClassVar[int]
+    rcode: int
+    rcode_name: str
+    resolved_ips: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, rcode: _Optional[int] = ..., rcode_name: _Optional[str] = ..., resolved_ips: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class APIMetrics(_message.Message):
     __slots__ = ("perAPICounts",)

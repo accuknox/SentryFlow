@@ -49,6 +49,13 @@ message APIEvent {
 
   // End-to-end observed latency in milliseconds.
   uint32 latency_ms = 8;
+
+  // DNS-specific fields. Populated only for DNS events (protocol DNS/*), in
+  // which case request/response are left unset; for regular API events these
+  // stay unset. Kept as plain fields (not a oneof) so generated Go accessors
+  // for existing fields remain unchanged.
+  DNSRequest dns_request = 9;
+  DNSResponse dns_response = 10;
 }
 
 message Metadata {
@@ -126,6 +133,17 @@ message Response {
 
   // Human-readable gRPC error message from grpc-message trailer.
   string grpc_status_message = 6;
+}
+
+message DNSRequest {
+  string query_name = 1;
+  string query_type = 2; // e.g., "A", "AAAA"
+}
+
+message DNSResponse {
+  int32 rcode = 1;       // 0 for NoError, 3 for NXDomain
+  string rcode_name = 2; // e.g. "NoError"
+  repeated string resolved_ips = 3;
 }
 
 message APIMetrics {
