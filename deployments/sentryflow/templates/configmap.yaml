@@ -51,6 +51,11 @@ data:
         deploymentName: {{ .Values.config.receivers.kongGateway.deploymentName }}
       {{- end }}
 
+      {{- if .Values.config.receivers.muleGateway.enabled }}
+      muleGateway:
+        enabled: true
+      {{- end }}
+
     receivers:
       {{- if .Values.config.receivers.nginxIngressController.enabled }}
       others:
@@ -98,6 +103,11 @@ data:
         - name: f5-big-ip
       {{- end }}
 
+      {{- if .Values.config.receivers.muleGateway.enabled }}
+      others:
+        - name: mule-gateway
+      {{- end }}
+    
     exporter:
       grpc:
         port: {{ .Values.config.grpcPort | default 8080 }}

@@ -1,0 +1,19 @@
+{
+    "minMuleVersion": "4.3.0",
+    "classLoaderModelLoaderDescriptor": {
+        "id": "mule",
+        "attributes": {
+            "exportedResources": []
+        }
+    },
+    "bundleDescriptorLoader": {
+        "id": "mule",
+        "attributes": {
+            "artifactId": "sentryflow-mule-policy",
+            "groupId": "com.accuknox.sentryflow",
+            "version": "1.0.0",
+            "classifier": "mule-policy",
+            "type": "jar"
+        }
+    }
+}

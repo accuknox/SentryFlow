@@ -4,7 +4,7 @@
 replicaCount: 1
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-  repository: public.ecr.aws/k9v9d5v2/sentryflow
+  repository: sanskardevops/sentryflow-mule:0.0.2
   # This sets the pull policy for images.
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
@@ -127,6 +127,9 @@ config:
 
     f5BigIp:
       enabled: false
+
+    muleGateway:
+      enabled: true
 
     kongGateway:
       enabled: false

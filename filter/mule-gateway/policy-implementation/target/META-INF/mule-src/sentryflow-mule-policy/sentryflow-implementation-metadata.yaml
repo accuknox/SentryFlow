@@ -1,0 +1,7 @@
+#%Policy Implementation 1.0
+technology: mule4
+minRuntimeVersion: 4.3.0
+supportedJavaVersions:
+  - "8"
+  - "11"
+  - "17"
