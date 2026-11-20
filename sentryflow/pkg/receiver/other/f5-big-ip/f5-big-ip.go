@@ -32,8 +32,6 @@ const (
 	REQPE     = "__REQPE__"
 )
 
-var logger *zap.SugaredLogger
-
 func Start(ctx context.Context, port uint16, apiEventsChan chan *pb.APIEvent) {
 	logger := util.LoggerFromCtx(ctx)
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -53,17 +51,17 @@ func Start(ctx context.Context, port uint16, apiEventsChan chan *pb.APIEvent) {
 			logger.Errorf("Connection error:", err)
 			continue
 		}
-		go handleConn(conn, apiEventsChan)
+		go handleConn(conn, apiEventsChan, logger)
 	}
 }
 
-func handleConn(conn net.Conn, apiEventsChan chan *pb.APIEvent) {
+func handleConn(conn net.Conn, apiEventsChan chan *pb.APIEvent, logger *zap.SugaredLogger) {
 	defer conn.Close()
 	scanner := bufio.NewScanner(conn)
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		event := parseF5LogLine(line)
+		event := parseF5LogLine(line, logger)
 		if event != nil {
 			apiEventsChan <- event
 		}
@@ -71,7 +69,7 @@ func handleConn(conn net.Conn, apiEventsChan chan *pb.APIEvent) {
 	}
 }
 
-func parseF5LogLine(line string) *pb.APIEvent {
+func parseF5LogLine(line string, logger *zap.SugaredLogger) *pb.APIEvent {
 
 	// 1) Extract the part between HSL_START and HSL_END
 	start := strings.Index(line, HSL_START)
@@ -83,7 +81,7 @@ func parseF5LogLine(line string) *pb.APIEvent {
 
 	payload := strings.TrimSpace(line[start+len(HSL_START) : end])
 	parts := strings.Split(payload, " ")
-	if len(parts) < 10 {
+	if len(parts) < 12 {
 		logger.Errorf("too few fields: %v", parts)
 		return nil
 	}
